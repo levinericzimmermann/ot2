@@ -2,20 +2,27 @@ import statistics
 import typing
 
 from mutwo.events import basic
+from mutwo.events import music
 from mutwo.utilities import constants
 from mutwo.parameters import tempos
 
 
-class TimeBracket(basic.SimultaneousEvent[basic.SequentialEvent]):
+class TimeBracket(
+    basic.SimultaneousEvent[
+        basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
+    ]
+):
     def __init__(
         self,
-        sequential_events: typing.Sequence[basic.SequentialEvent],
+        simultaneous_events: typing.Sequence[
+            basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
+        ],
         start_time_range: typing.Tuple[constants.Real, constants.Real],
         stop_time_range: typing.Tuple[constants.Real, constants.Real],
     ):
         self._start_time_range = start_time_range
         self._stop_time_range = stop_time_range
-        super().__init__(sequential_events)
+        super().__init__(simultaneous_events)
 
     @property
     def start_time_range(self) -> typing.Tuple[constants.Real, constants.Real]:
