@@ -19,9 +19,11 @@ class ColotomicPattern(basic.SequentialEvent[ColotomicElement]):
         colotomic_elements: typing.Sequence[ColotomicElement],
         n_repetitions: int = 3,
         tempo: tempos.TempoPoint = tempos.TempoPoint(60),
+        time_signature: typing.Tuple[int, int] = (4, 4),
     ):
         self.tempo = tempo
         self.n_repetitions = n_repetitions
+        self.time_signature = time_signature
         super().__init__(colotomic_elements)
 
 
