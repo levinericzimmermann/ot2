@@ -6,8 +6,10 @@ from mutwo.converters import abc
 from mutwo.converters import symmetrical
 from mutwo.events import basic
 from mutwo.events import music
-from mutwo.parameters import tempos 
+from mutwo.parameters import tempos
+
 from ot2.events import colotomic_brackets
+from ot2.converters.symmetrical import playing_indicators as ot2_playing_indicators
 
 
 class ColotomicPatternToNestedSequentialEventConverter(abc.Converter):
@@ -40,7 +42,9 @@ class ColotomicPatternToNestedSequentialEventConverter(abc.Converter):
 
     @staticmethod
     def _make_playing_indicators_converter() -> symmetrical.playing_indicators.PlayingIndicatorsConverter:
-        return symmetrical.playing_indicators.PlayingIndicatorsConverter([])
+        return symmetrical.playing_indicators.PlayingIndicatorsConverter(
+            [ot2_playing_indicators.ExplicitFermataConverter()]
+        )
 
     def _convert_colotomic_pattern(
         self, colotomic_pattern_to_convert: colotomic_brackets.ColotomicPattern
@@ -54,10 +58,10 @@ class ColotomicPatternToNestedSequentialEventConverter(abc.Converter):
 
         converted_colotomic_pattern = basic.SequentialEvent([])
         for colotomic_element in colotomic_pattern_to_convert:
-            # adjusted_colotomic_element = playing_indicators_converter.convert(
-            #     tempo_converter.convert(colotomic_element)
-            # )
-            adjusted_colotomic_element = tempo_converter.convert(colotomic_element)
+            adjusted_colotomic_element = playing_indicators_converter.convert(
+                tempo_converter.convert(colotomic_element)
+            )
+            # adjusted_colotomic_element = tempo_converter.convert(colotomic_element)
             converted_colotomic_pattern.append(adjusted_colotomic_element)
 
         return converted_colotomic_pattern

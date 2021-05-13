@@ -5,12 +5,25 @@ import expenvelope  # type: ignore
 
 from mutwo.events import basic
 from mutwo.events import music
-
 from mutwo.converters import abc as converters_abc
 from mutwo.converters.frontends import abjad as mutwo_abjad
+from mutwo import parameters as mutwo_parameters
 
 from ot2.events import colotomic_brackets
 from ot2.events import time_brackets
+
+
+class ColotomicPitchToMutwoPitchConverter(mutwo_abjad.MutwoPitchToAbjadPitchConverter):
+    def convert(
+        self, mutwo_pitch: mutwo_parameters.pitches.WesternPitch
+    ) -> abjad.NamedPitch:
+        mutwo_pitch = {
+            "g": mutwo_parameters.pitches.WesternPitch("g", octave=3),
+            "b": mutwo_parameters.pitches.WesternPitch("b", octave=3),
+            "d": mutwo_parameters.pitches.WesternPitch("d", octave=4),
+            "f": mutwo_parameters.pitches.WesternPitch("f", octave=4),
+        }[mutwo_pitch.pitch_class_name]
+        return super().convert(mutwo_pitch)
 
 
 class ColotomicPatternToAbjadScoreConverter(converters_abc.Converter):
@@ -52,10 +65,15 @@ class ColotomicPatternToAbjadScoreConverter(converters_abc.Converter):
             levels=[colotomic_pattern.tempo, colotomic_pattern.tempo], durations=[1]
         )
         sequential_event_to_quantized_abjad_container_converter = mutwo_abjad.SequentialEventToQuantizedAbjadContainerConverter(
-            tempo_envelope=tempo_envelope
+            time_signatures=(
+                colotomic_pattern.time_signature,
+                colotomic_pattern.time_signature,
+            ),
+            tempo_envelope=tempo_envelope,
         )
         sequential_event_to_abjad_voice_converter = mutwo_abjad.SequentialEventToAbjadVoiceConverter(
-            sequential_event_to_quantized_abjad_container_converter
+            sequential_event_to_quantized_abjad_container_converter,
+            mutwo_pitch_to_abjad_pitch_converter=ColotomicPitchToMutwoPitchConverter(),
         )
         return sequential_event_to_abjad_voice_converter
 
@@ -74,7 +92,7 @@ class ColotomicPatternToAbjadScoreConverter(converters_abc.Converter):
             abjad_voice, colotomic_pattern_to_convert
         )
 
-        abjad_score = abjad.Score([abjad_voice])
+        abjad_score = abjad.Score([abjad.Staff([abjad_voice])])
         return abjad_score
 
 
@@ -100,7 +118,7 @@ class ColotomicPatternsToLilypondFileConverter(converters_abc.Converter):
 
         lilypond_file = abjad.LilyPondFile()
 
-        header = abjad.Block('header')
+        header = abjad.Block("header")
         header.title = '"ohne Titel (2)"'
         header.instrument = '"percussive instrument(s)"'
         header.composer = '"Levin Eric Zimmermann"'
