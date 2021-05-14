@@ -1,4 +1,5 @@
 import random
+import typing
 
 import expenvelope  # type: ignore
 
@@ -9,6 +10,7 @@ from mutwo.events import music
 from mutwo.parameters import tempos
 
 from ot2.events import colotomic_brackets
+from ot2.events import time_brackets
 from ot2.converters.symmetrical import playing_indicators as ot2_playing_indicators
 
 
@@ -89,3 +91,19 @@ class ColotomicPatternToNestedSequentialEventConverter(abc.Converter):
             )
 
         return repetitions
+
+
+class ColotomicBracketToTimeBracketConverter(abc.Converter):
+    def __init__(
+        self,
+        colotomic_patterns: typing.Tuple[colotomic_brackets.ColotomicPattern],
+        converted_colotomic_pattern: basic.SequentialEvent[
+            basic.SequentialEvent[basic.SequentialEvent]
+        ],
+    ):
+        pass
+
+    def convert(
+        self, colotomic_bracket_to_convert: colotomic_brackets.ColotomicBracket
+    ) -> time_brackets.TimeBracket:
+        pass
