@@ -1,3 +1,4 @@
+import copy
 import random
 import typing
 
@@ -5,13 +6,15 @@ import expenvelope  # type: ignore
 
 from mutwo.converters import abc
 from mutwo.converters import symmetrical
+from mutwo.events import abc as mutwo_abc_events
 from mutwo.events import basic
 from mutwo.events import music
 from mutwo.parameters import tempos
+from mutwo.utilities import constants as mutwo_constants
 
+from ot2.converters.symmetrical import playing_indicators as ot2_playing_indicators
 from ot2.events import colotomic_brackets
 from ot2.events import time_brackets
-from ot2.converters.symmetrical import playing_indicators as ot2_playing_indicators
 
 
 class ColotomicPatternToNestedSequentialEventConverter(abc.Converter):
@@ -96,14 +99,56 @@ class ColotomicPatternToNestedSequentialEventConverter(abc.Converter):
 class ColotomicBracketToTimeBracketConverter(abc.Converter):
     def __init__(
         self,
-        colotomic_patterns: typing.Tuple[colotomic_brackets.ColotomicPattern],
         converted_colotomic_pattern: basic.SequentialEvent[
-            basic.SequentialEvent[basic.SequentialEvent]
+            basic.SequentialEvent[basic.SequentialEvent[music.NoteLike]]
         ],
     ):
-        pass
+        self._converted_colotomic_pattern = converted_colotomic_pattern
+
+    @staticmethod
+    def _get_absolute_time_of_nested_element(
+        indices: typing.Sequence[int], nested_event: mutwo_abc_events.ComplexEvent
+    ) -> mutwo_constants.Real:
+        absolute_time = 0
+        for nth_index, index in enumerate(indices):
+            absolute_time += nested_event.get_event_from_indices(
+                indices[:nth_index]
+            ).absolute_times[index]
+
+        return absolute_time
+
+    def _convert_position_to_time(
+        self, position: colotomic_brackets.ColotomicElementIndicator
+    ) -> mutwo_constants.Real:
+        return ColotomicBracketToTimeBracketConverter._get_absolute_time_of_nested_element(
+            position, self._converted_colotomic_pattern
+        )
+
+    def _position_or_position_range_to_time_or_time_range(
+        self, position_or_position_range: colotomic_brackets.PositionOrPositionRange,
+    ) -> time_brackets.TimeOrTimeRange:
+        if hasattr(position_or_position_range, "__getitem__"):
+            return (
+                self._convert_position_to_time(position_or_position_range[0]),
+                self._convert_position_to_time(position_or_position_range[1]),
+            )
+        else:
+            return self._convert_position_to_time(position_or_position_range)
 
     def convert(
         self, colotomic_bracket_to_convert: colotomic_brackets.ColotomicBracket
     ) -> time_brackets.TimeBracket:
-        pass
+        start_time_or_start_time_range = self.position_or_position_range_to_time_or_time_range(
+            colotomic_bracket_to_convert.start_position_or_start_position_range
+        )
+        end_time_or_end_time_range = self._position_or_position_range_to_time_or_time_range(
+            colotomic_bracket_to_convert.end_position_or_end_position_range
+        )
+
+        converted_time_bracket = time_brackets.TimeBracket(
+            copy.deepcopy(colotomic_bracket_to_convert[:]),
+            start_time_or_start_time_range,
+            end_time_or_end_time_range,
+        )
+
+        return converted_time_bracket

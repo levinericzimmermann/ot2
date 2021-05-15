@@ -15,7 +15,7 @@ from ot2.events import time_brackets
 from ot2.converters.frontends import abjad as ot2_abjad
 
 
-class TimeBracketToAbjadScoreConverter(unittest.TestCase):
+class TimeBracketToAbjadScoreConverterTest(unittest.TestCase):
     def test_convert(self):
         time_bracket = time_brackets.TimeBracket(
             [
@@ -60,4 +60,8 @@ class TimeBracketToAbjadScoreConverter(unittest.TestCase):
         lilypond_file = abjad.LilyPondFile(
             items=[abjad_score], includes=["ekme-heji-ref-c.ily"]
         )
-        abjad.persist.as_pdf(lilypond_file, "test.pdf")
+        # abjad.persist.as_pdf(lilypond_file, "test.pdf")
+
+
+if __name__ == "__main__":
+    unittest.main()

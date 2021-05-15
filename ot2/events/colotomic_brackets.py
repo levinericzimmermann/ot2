@@ -27,12 +27,33 @@ class ColotomicPattern(basic.SequentialEvent[ColotomicElement]):
         super().__init__(colotomic_elements)
 
 
+# nth pattern, nth repetitions, nth element
+ColotomicElementIndicator = typing.Tuple[int, int, int]
+
+PositionOrPositionRange = typing.Union[
+    ColotomicElementIndicator,
+    typing.Tuple[ColotomicElementIndicator, ColotomicElementIndicator],
+]
+
+
 class ColotomicBracket(
     basic.SimultaneousEvent[
         basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
     ]
 ):
-    pass
+    def __init__(
+        self,
+        simultaneous_events: typing.Sequence[
+            basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
+        ],
+        start_position_or_start_position_range: PositionOrPositionRange,
+        end_position_or_end_position_range: PositionOrPositionRange,
+    ):
+        super().__init__(simultaneous_events)
+        self.start_position_or_start_position_range = (
+            start_position_or_start_position_range
+        )
+        self.end_position_or_end_position_range = end_position_or_end_position_range
 
 
 class TempoBasedColotomicBracket(ColotomicBracket):
