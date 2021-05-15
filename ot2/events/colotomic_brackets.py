@@ -5,6 +5,8 @@ from mutwo.events import basic
 from mutwo.events import music
 from mutwo.parameters import tempos
 
+from ot2.events import basic as ot2_basic
+
 
 class ColotomicElement(basic.SequentialEvent[music.NoteLike]):
     pass
@@ -38,13 +40,13 @@ PositionOrPositionRange = typing.Union[
 
 class ColotomicBracket(
     basic.SimultaneousEvent[
-        basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
+        ot2_basic.AssignedSimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
     ]
 ):
     def __init__(
         self,
         simultaneous_events: typing.Sequence[
-            basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
+            ot2_basic.AssignedSimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
         ],
         start_position_or_start_position_range: PositionOrPositionRange,
         end_position_or_end_position_range: PositionOrPositionRange,
@@ -57,4 +59,8 @@ class ColotomicBracket(
 
 
 class TempoBasedColotomicBracket(ColotomicBracket):
+    pass
+
+
+class ColotomicBracketContainer(object):
     pass
