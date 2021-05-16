@@ -139,14 +139,14 @@ class ColotomicBracketToTimeBracketConverter(abc.Converter):
         self, colotomic_bracket_to_convert: colotomic_brackets.ColotomicBracket
     ) -> time_brackets.TimeBracket:
         start_time_or_start_time_range = self._position_or_position_range_to_time_or_time_range(
-            colotomic_bracket_to_convert.start_position_or_start_position_range
+            colotomic_bracket_to_convert.start_or_start_range
         )
         end_time_or_end_time_range = self._position_or_position_range_to_time_or_time_range(
-            colotomic_bracket_to_convert.end_position_or_end_position_range
+            colotomic_bracket_to_convert.end_or_end_range
         )
 
         converted_time_bracket = time_brackets.TimeBracket(
-            tuple(colotomic_bracket_to_convert),
+            tuple(copy.copy(colotomic_bracket_to_convert)),
             start_time_or_start_time_range,
             end_time_or_end_time_range,
         )

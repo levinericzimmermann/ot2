@@ -8,6 +8,7 @@ from mutwo.utilities import constants
 from mutwo.parameters import tempos
 
 from ot2.events import basic as ot2_basic
+from ot2.events import brackets
 from ot2.utilities import exceptions
 
 TimeOrTimeRange = typing.Union[
@@ -15,31 +16,16 @@ TimeOrTimeRange = typing.Union[
 ]
 
 
-class TimeBracket(
-    basic.SimultaneousEvent[
-        ot2_basic.AssignedSimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
-    ]
-):
+class TimeBracket(brackets.Bracket):
     def __init__(
         self,
         simultaneous_events: typing.Sequence[
             ot2_basic.AssignedSimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
         ],
-        start_time_or_start_time_range: TimeOrTimeRange,
-        end_time_or_end_time_range: TimeOrTimeRange,
+        start_or_start_range: TimeOrTimeRange,
+        end_or_end_range: TimeOrTimeRange,
     ):
-        self._start_time_or_start_time_range = start_time_or_start_time_range
-        self._end_time_or_end_time_range = end_time_or_end_time_range
-        super().__init__(simultaneous_events)
-
-    @staticmethod
-    def _get_mean_of_time_or_time_range(
-        time_or_time_range: TimeOrTimeRange,
-    ) -> constants.Real:
-        if isinstance(time_or_time_range, typing.Sequence):
-            return statistics.mean(time_or_time_range)
-        else:
-            return time_or_time_range
+        super().__init__(simultaneous_events, start_or_start_range, end_or_end_range)
 
     @staticmethod
     def _assign_concrete_time(time_or_time_range: TimeOrTimeRange) -> constants.Real:
@@ -49,28 +35,18 @@ class TimeBracket(
             return time_or_time_range
 
     @property
-    def start_time_or_start_time_range(self) -> TimeOrTimeRange:
-        return self._start_time_or_start_time_range
-
-    @property
-    def end_time_or_end_time_range(self) -> TimeOrTimeRange:
-        return self._end_time_or_end_time_range
-
-    @property
-    def mean_start_time(self) -> constants.Real:
-        return TimeBracket._get_mean_of_time_or_time_range(
-            self.start_time_or_start_time_range
+    def mean_start(self) -> constants.Real:
+        return brackets.Bracket._get_mean_of_value_or_value_range(
+            self.start_or_start_range
         )
 
     @property
-    def mean_end_time(self) -> constants.Real:
-        return TimeBracket._get_mean_of_time_or_time_range(
-            self.end_time_or_end_time_range
-        )
+    def mean_end(self) -> constants.Real:
+        return TimeBracket._get_mean_of_value_or_value_range(self.end_or_end_range)
 
     @property
     def duration(self) -> constants.Real:
-        return self.mean_end_time - self.mean_start_time
+        return self.mean_end - self.mean_start
 
     @property
     def assigned_start_time(self) -> constants.Real:
@@ -89,10 +65,10 @@ class TimeBracket(
     def assign_concrete_times(self):
         """Assign concrete values for start and end time"""
         self._assigned_start_time = TimeBracket._assign_concrete_time(
-            self.start_time_or_start_time_range
+            self.start_or_start_range
         )
         self._assigned_end_time = TimeBracket._assign_concrete_time(
-            self.end_time_or_end_time_range
+            self.end_or_end_range
         )
 
 
@@ -122,22 +98,5 @@ class TempoBasedTimeBracket(TimeBracket):
         return self._tempo_range
 
 
-class TimeBracketContainer(object):
-    def __init__(self, time_brackets: typing.Sequence[TimeBracket]):
-        self._time_brackets = tuple(
-            sorted(time_brackets, key=lambda time_bracket: time_bracket.mean_start_time)
-        )
-
-    def __repr__(self) -> str:
-        return repr(self._time_brackets)
-
-    def filter(self, instrument: str) -> typing.Tuple[TimeBracket, ...]:
-        """Filter all time brackets that belong to a certain instrument"""
-        filtered_time_brackets = []
-        for time_bracket in self._time_brackets:
-            for assigned_simultaneous_event in time_bracket:
-                if assigned_simultaneous_event.instrument == instrument:
-                    filtered_time_brackets.append(time_bracket)
-                    break
-
-        return tuple(filtered_time_brackets)
+class TimeBracketContainer(brackets.BracketContainer[TimeBracket]):
+    pass

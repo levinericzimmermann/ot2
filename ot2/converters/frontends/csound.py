@@ -9,7 +9,7 @@ class PercussiveSequentialEventToSoundFileConverter(csound.CsoundConverter):
         csound_score_converter = csound.CsoundScoreConverter(
             "ot2/converters/frontends/percussive.sco",
             p3=lambda note_like: 20,  # set duration of each sample to 20 seconds
-            p4=NestedSequentialEventToSoundFileConverter._simple_event_to_sample_path,
+            p4=PercussiveSequentialEventToSoundFileConverter._simple_event_to_sample_path,
             p5=lambda note_like: note_like.volume.amplitude,
         )
         super().__init__(

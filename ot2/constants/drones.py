@@ -32,4 +32,5 @@ COLOTOMIC_BRACKETS = (
     ),
 )
 
-colotomic_brackets_container.COLOTOMIC_BRACKETS_CONTAINER.extend(COLOTOMIC_BRACKETS)
+for colotomic_bracket in COLOTOMIC_BRACKETS:
+    colotomic_brackets_container.COLOTOMIC_BRACKETS_CONTAINER.register(colotomic_bracket)
