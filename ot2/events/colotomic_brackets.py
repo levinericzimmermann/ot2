@@ -65,7 +65,7 @@ class ColotomicBracket(brackets.Bracket):
     def _position_or_position_range_to_position_index_or_position_index_range(
         position_or_position_range: PositionOrPositionRange,
     ) -> typing.Union[constants.Real, typing.Tuple[constants.Real, constants.Real]]:
-        if hasattr(position_or_position_range, "__getitem__"):
+        if len(position_or_position_range) == 2:
             return (
                 ColotomicBracket._position_to_position_index(
                     position_or_position_range[0]

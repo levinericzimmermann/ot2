@@ -127,7 +127,7 @@ class ColotomicBracketToTimeBracketConverter(abc.Converter):
     def _position_or_position_range_to_time_or_time_range(
         self, position_or_position_range: colotomic_brackets.PositionOrPositionRange,
     ) -> time_brackets.TimeOrTimeRange:
-        if hasattr(position_or_position_range, "__getitem__"):
+        if len(position_or_position_range) == 2:
             return (
                 self._convert_position_to_time(position_or_position_range[0]),
                 self._convert_position_to_time(position_or_position_range[1]),

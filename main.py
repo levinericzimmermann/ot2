@@ -83,9 +83,35 @@ def _render_drone_instrument(
     pass
 
 
+def _render_sustaining_instruments(
+    time_brackets_container: time_brackets.TimeBracketContainer,
+):
+    from ot2.constants import instruments
+    from ot2.converters import frontends
+    from ot2.converters import symmetrical
+
+    for nth_sustaining_instrument, instrument_id in enumerate(
+        (instruments.ID_SUS0, instruments.ID_SUS1, instruments.ID_SUS2)
+    ):
+        relevant_time_brackets = time_brackets_container.filter(instrument_id)
+
+        # render sound file
+        simultaneous_event_converter = symmetrical.time_brackets.TimeBracketsToSimultaneousEventConverter(
+            instrument_id, instruments.INSTRUMENT_TO_N_VOICES[instrument_id]
+        )
+        midi_file_converter = frontends.midi.SustainingInstrumentEventToMidiFileConverter(
+            nth_sustaining_instrument
+        )
+        simultaneous_event = simultaneous_event_converter.convert(
+            relevant_time_brackets
+        )
+        midi_file_converter.convert(simultaneous_event)
+
+
 if __name__ == "__main__":
     converted_colotomic_pattens = _make_converted_colotomic_patterns()
     time_brackets_container = _make_time_brackets_container(converted_colotomic_pattens)
 
     _render_drone_instrument(time_brackets_container)
+    _render_sustaining_instruments(time_brackets_container)
     _render_colotomic_pattern(converted_colotomic_pattens)

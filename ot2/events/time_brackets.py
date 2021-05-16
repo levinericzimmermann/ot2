@@ -1,4 +1,3 @@
-import statistics
 import random
 import typing
 

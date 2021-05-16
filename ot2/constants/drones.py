@@ -13,22 +13,22 @@ COLOTOMIC_BRACKETS = (
     colotomic_brackets.ColotomicBracket(
         (
             ot2_basic.AssignedSimultaneousEvent(
-                [basic.SequentialEvent([music.NoteLike("15/16", 1), music.NoteLike('55/64', 1)])],
+                [basic.SequentialEvent([music.NoteLike("15/32", 1)])],
                 instruments.ID_DRONE,
             ),
         ),
-        ((0, 1, 0), (0, 1, 1)),
-        ((0, 2, 0), (0, 2, 1)),
+        ((0, 0, 1), (0, 1, 0)),
+        ((0, 2, 1), (0, 3, 0)),
     ),
     colotomic_brackets.ColotomicBracket(
         (
             ot2_basic.AssignedSimultaneousEvent(
-                [basic.SequentialEvent([music.NoteLike("21/32", 1)])],
+                [basic.SequentialEvent([music.NoteLike("21/64", 1)])],
                 instruments.ID_DRONE,
             ),
         ),
-        ((0, 3, 0), (0, 3, 1)),
-        ((1, 1, 0), (1, 1, 1)),
+        ((1, 0, 0), (1, 0, 1)),
+        ((1, 2, 0), (1, 2, 1)),
     ),
 )
 
