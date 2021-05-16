@@ -42,7 +42,8 @@ class TimeBracketsToSimultaneousEventConverter(converters_abc.Converter):
         ],
         duration_in_seconds: constants.Real,
     ) -> ot2_basic.AssignedSimultaneousEvent[basic.SequentialEvent[music.NoteLike]]:
-        pass
+        assigned_simultaneous_event.duration = duration_in_seconds
+        return assigned_simultaneous_event
 
     def _extract_assigned_simultaneous_event(
         self,
@@ -86,15 +87,14 @@ class TimeBracketsToSimultaneousEventConverter(converters_abc.Converter):
 
             duration_in_seconds = end_time - start_time
             assigned_simultaneous_event = self._extract_assigned_simultaneous_event(
-                time_bracket[:]
+                tuple(time_bracket)
             )
             processed_assigned_simultaneous_event = TimeBracketsToSimultaneousEventConverter._adjust_assigned_simultaneous_event(
                 assigned_simultaneous_event, duration_in_seconds
             )
-            for (
-                nth_sequential_event,
-                sequential_event,
-            ) in processed_assigned_simultaneous_event:
+            for (nth_sequential_event, sequential_event,) in enumerate(
+                processed_assigned_simultaneous_event
+            ):
                 simultaneous_event[nth_sequential_event].extend(sequential_event)
 
             previous_end_time = end_time

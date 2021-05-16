@@ -123,21 +123,21 @@ class TempoBasedTimeBracket(TimeBracket):
 
 
 class TimeBracketContainer(object):
-    def __init__(self, n_instruments: int):
-        pass
+    def __init__(self, time_brackets: typing.Sequence[TimeBracket]):
+        self._time_brackets = tuple(
+            sorted(time_brackets, key=lambda time_bracket: time_bracket.mean_start_time)
+        )
 
-    def register(
-        self, time_bracket: TimeBracket, used_instruments: typing.Sequence[int]
-    ) -> None:
-        """Register new TimeBracket in TimeBracketContainer"""
-        pass
+    def __repr__(self) -> str:
+        return repr(self._time_brackets)
 
-    def filter(
-        self, instrument_index: int
-    ) -> typing.Tuple[typing.Tuple[typing.Tuple[int, ...], TimeBracket], ...]:
-        """Filter all time brackets that belong to a certain instrument
+    def filter(self, instrument: str) -> typing.Tuple[TimeBracket, ...]:
+        """Filter all time brackets that belong to a certain instrument"""
+        filtered_time_brackets = []
+        for time_bracket in self._time_brackets:
+            for assigned_simultaneous_event in time_bracket:
+                if assigned_simultaneous_event.instrument == instrument:
+                    filtered_time_brackets.append(time_bracket)
+                    break
 
-        :return: Instrument indices/TimeBracket pairs sorted by
-            start_time_range
-        """
-        pass
+        return tuple(filtered_time_brackets)

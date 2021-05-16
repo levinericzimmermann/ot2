@@ -22,11 +22,23 @@ PERCUSSION_PITCH_TO_PERCUSSION_SAMPLES_CYCLE = {
         )
     ),
     "f": itertools.cycle(
+        # the woodblock samples are kind of noisy..
+        # (
+        #     "ot2/samples/percussion/woodblock/wood_click_f_rr1.wav",
+        #     "ot2/samples/percussion/woodblock/wood_click_f_rr2.wav",
+        #     "ot2/samples/percussion/woodblock/wood_click3_vl2.wav",
+        #     "ot2/samples/percussion/woodblock/wood_click3_vl1.wav",
+        # )
         (
-            "ot2/samples/percussion/woodblock/wood_click_f_rr1.wav",
-            "ot2/samples/percussion/woodblock/wood_click_f_rr2.wav",
-            "ot2/samples/percussion/woodblock/wood_click3_vl2.wav",
-            "ot2/samples/percussion/woodblock/wood_click3_vl1.wav",
+            "ot2/samples/percussion/claves/claves_mp.wav",
+            "ot2/samples/percussion/claves/claves_ff.wav",
+            "ot2/samples/percussion/claves/claves_mf_2.wav",
+            "ot2/samples/percussion/claves/claves_pp1.wav",
+            "ot2/samples/percussion/claves/claves_mf.wav",
+            "ot2/samples/percussion/claves/claves_mf_3.wav",
         )
     ),
 }
+
+
+FILES_PATH = "ot2/converters/frontends"
