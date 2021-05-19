@@ -29,8 +29,8 @@ class Bracket(
         end_or_end_range: AbstractTimeOrAbstractTimeRange,
     ):
         super().__init__(simultaneous_events)
-        self._start_or_start_range = start_or_start_range
-        self._end_or_end_range = end_or_end_range
+        self.start_or_start_range = start_or_start_range
+        self.end_or_end_range = end_or_end_range
 
     @staticmethod
     def _get_mean_of_value_or_value_range(
@@ -47,9 +47,19 @@ class Bracket(
     def start_or_start_range(self) -> AbstractTimeOrAbstractTimeRange:
         return self._start_or_start_range
 
+    @start_or_start_range.setter
+    def start_or_start_range(
+        self, start_or_start_range: AbstractTimeOrAbstractTimeRange
+    ):
+        self._start_or_start_range = start_or_start_range
+
     @property
     def end_or_end_range(self) -> AbstractTimeOrAbstractTimeRange:
         return self._end_or_end_range
+
+    @end_or_end_range.setter
+    def end_or_end_range(self, end_or_end_range: AbstractTimeOrAbstractTimeRange):
+        self._end_or_end_range = end_or_end_range
 
     @property
     @abc.abstractmethod

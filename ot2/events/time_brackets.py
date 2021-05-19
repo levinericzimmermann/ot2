@@ -33,6 +33,18 @@ class TimeBracket(brackets.Bracket):
         else:
             return time_or_time_range
 
+    @brackets.Bracket.start_or_start_range.setter
+    def start_or_start_range(self, start_or_start_range: TimeOrTimeRange):
+        self._start_or_start_range = start_or_start_range
+        if hasattr(self, "_assigned_start_time"):
+            self.assign_concrete_times()
+
+    @brackets.Bracket.end_or_end_range.setter
+    def end_or_end_range(self, end_or_end_range: TimeOrTimeRange):
+        self._end_or_end_range = end_or_end_range
+        if hasattr(self, "_assigned_end_time"):
+            self.assign_concrete_times()
+
     @property
     def mean_start(self) -> constants.Real:
         return brackets.Bracket._get_mean_of_value_or_value_range(
