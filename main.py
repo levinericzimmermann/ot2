@@ -3,6 +3,17 @@
 from ot2.events import time_brackets
 
 
+def _run():
+    from ot2.generators import colotomic_brackets
+
+    colotomic_bracket_generators = (
+        colotomic_brackets.TestColotomicBracketGenerator(),
+        colotomic_brackets.TestColotomicBracketGenerator(),
+    )
+    for colotomic_bracket_generator in colotomic_bracket_generators:
+        colotomic_bracket_generator.run()
+
+
 def _make_converted_colotomic_patterns():
     from mutwo.events import basic
     from ot2.converters import symmetrical
@@ -57,9 +68,8 @@ def _render_colotomic_pattern(converted_patterns):
     lilypond_file = lilypond_file_converter.convert(
         ot2.constants.colotomic_pattern.COLOTOMIC_PATTERNS
     )
-    print(abjad.lilypond(lilypond_file))
-    # abjad.persist.as_ly(lilypond_file, 'percussion_brackets.ly')
-    abjad.show(lilypond_file)
+    abjad.persist.as_pdf(lilypond_file, 'builds/percussion_brackets.pdf')
+    # abjad.show(lilypond_file)
 
 
 def _render_drone_instrument(
@@ -109,6 +119,8 @@ def _render_sustaining_instruments(
 
 
 if __name__ == "__main__":
+    _run()
+
     converted_colotomic_pattens = _make_converted_colotomic_patterns()
     time_brackets_container = _make_time_brackets_container(converted_colotomic_pattens)
 
