@@ -313,7 +313,10 @@ class HoquetusDingDong(object):
         return start_range, end_range
 
     def _make_colotomic_brackets_for_drone(
-        self, start_index: int = 0, instrument: str = instruments.ID_DRONE
+        self,
+        start_index: int = 0,
+        instrument: str = instruments.ID_DRONE,
+        ambitus=instruments.AMBITUS_DRONE_INSTRUMENT,
     ) -> typing.Tuple[colotomic_brackets.ColotomicBracket, ...]:
         drone_colotomic_brackets: typing.List[colotomic_brackets.ColotomicBracket] = []
 
@@ -328,7 +331,15 @@ class HoquetusDingDong(object):
                     ot2_basic.AssignedSimultaneousEvent(
                         [
                             basic.SequentialEvent(
-                                [music.NoteLike(current_ding_dong_unit.root, 1, "p")]
+                                [
+                                    music.NoteLike(
+                                        ambitus.find_all_pitch_variants(
+                                            current_ding_dong_unit.root
+                                        )[0],
+                                        1,
+                                        "p",
+                                    )
+                                ]
                             )
                         ],
                         instrument,
@@ -350,6 +361,7 @@ class HoquetusDingDong(object):
             (instruments.ID_SUS0, instruments.ID_SUS1, instruments.ID_SUS2)[
                 self._nth_sustaining_instrument_makes_drone_support
             ],
+            instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES,
         )
 
     def _make_colotomic_brackets_for_hoquetus(
