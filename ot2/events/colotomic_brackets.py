@@ -3,6 +3,7 @@ import typing
 
 from mutwo.events import basic
 from mutwo.events import music
+from mutwo.parameters import pitches
 from mutwo.parameters import tempos
 from mutwo.utilities import constants
 
@@ -12,6 +13,20 @@ from ot2.events import brackets
 
 class ColotomicElement(basic.SequentialEvent[music.NoteLike]):
     pass
+
+
+class AnnotatedColotomicElement(ColotomicElement):
+    def __init__(
+        self,
+        notes: typing.Sequence[music.NoteLike],
+        pitches_and_weights: typing.Dict[pitches.JustIntonationPitch, float],
+        density: float = 0.5,
+        noisiness: float = 0,
+    ):
+        self.pitches_and_weights = pitches_and_weights
+        self.density = density
+        self.noisiness = noisiness
+        super().__init__(notes)
 
 
 TempoPoint = typing.Union[float, tempos.TempoPoint]
