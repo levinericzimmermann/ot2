@@ -308,7 +308,7 @@ class HoquetusDingDong(object):
                 self._ding_dong_units[nth_ding_dong_unit + 2].colotomic_indicators[0],
             )
         else:
-            end_range = current_ding_dong_unit[-2:]
+            end_range = current_ding_dong_unit.colotomic_indicators[-2:]
 
         return start_range, end_range
 
@@ -355,13 +355,15 @@ class HoquetusDingDong(object):
     def _make_colotomic_brackets_for_hoquetus(
         self,
     ) -> typing.Tuple[colotomic_brackets.ColotomicBracket, ...]:
-        return tuple([])
+        return self._make_colotomic_brackets_for_drone(
+            2, instruments.ID_SUS1,
+        ) + self._make_colotomic_brackets_for_drone(2, instruments.ID_SUS2,)
 
     # ######################################################## #
     #                     public methods                       #
     # ######################################################## #
 
-    def __call__(
+    def run(
         self,
     ) -> typing.Tuple[
         typing.Tuple[colotomic_brackets.ColotomicPattern, ...],
