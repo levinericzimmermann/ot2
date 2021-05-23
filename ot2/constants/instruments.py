@@ -36,6 +36,10 @@ AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES = ambitus.Ambitus(
     ),
 )
 
+AMBITUS_DRONE_INSTRUMENT = ambitus.Ambitus(
+    pitches.JustIntonationPitch("1/4"), pitches.JustIntonationPitch("1/2")
+)
+
 # how many voices (staves) one instrument owns
 INSTRUMENT_TO_N_VOICES = {
     ID_PERCUSSIVE: 1,
