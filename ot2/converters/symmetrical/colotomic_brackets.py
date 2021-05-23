@@ -152,3 +152,34 @@ class ColotomicBracketToTimeBracketConverter(abc.Converter):
         )
 
         return converted_time_bracket
+
+
+class ColotomicPatternMakerToAnnotatedColotomicPatternsConverter(abc.Converter):
+    def __init__(
+        self,
+        absent_prime_number: int,
+        main_duration_envelope: expenvelope.Envelope = expenvelope.Envelope.from_points(
+            (0, 4), (1, 4)
+        ),
+        transition_duration_envelope: expenvelope.Envelope = expenvelope.Envelope.from_points(
+            (0, 3), (1, 3)
+        ),
+        density_envelope: expenvelope.Envelope = expenvelope.Envelope.from_points(
+            (0, 0.5), (1, 0.5)
+        ),
+        noisiness_envelope: expenvelope.Envelope = expenvelope.Envelope.from_points(
+            (0, 0.25), (1, 0.25)
+        ),
+    ):
+        self._main_duration_envelope = main_duration_envelope
+        self._transition_duration_envelope = transition_duration_envelope
+        self._density_envelope = density_envelope
+        self._noisiness_envelope = noisiness_envelope
+
+    def convert(
+        self,
+        colotomic_pattern_maker: typing.Callable[
+            [], colotomic_brackets.ColotomicPattern
+        ],
+    ) -> typing.Tuple[colotomic_brackets.ColotomicPattern, ...]:
+        pass
