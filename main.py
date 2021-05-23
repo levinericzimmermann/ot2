@@ -4,14 +4,52 @@ from ot2.events import time_brackets
 
 
 def _run():
-    from ot2.generators.side_effects import colotomic_brackets
+    from mutwo.events import music
+    from mutwo.parameters import tempos
+
+    from ot2 import events
+    from ot2 import generators
 
     colotomic_bracket_generators = (
-        colotomic_brackets.TestColotomicBracketGenerator(),
-        colotomic_brackets.TestColotomicBracketGenerator(),
+        generators.colotomic_brackets.HoquetusDingDong(
+            (11, 5, 11, 3, 5),
+            lambda: events.colotomic_brackets.ColotomicPattern(
+                [
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("g", 6, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("f", 4, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("f", 4, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("f", 4, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("b", 6, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("f", 4, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("f", 4, "mp")]
+                    ),
+                ],
+                tempo=tempos.TempoPoint(40),
+                n_repetitions=3,
+            ),
+        ),
     )
     for colotomic_bracket_generator in colotomic_bracket_generators:
-        colotomic_bracket_generator.run()
+        (
+            colotomic_patterns_to_add,
+            colotomic_brackets_to_add,
+        ) = colotomic_bracket_generator.run()
+        generators.side_effects.colotomic_brackets.add_colotomic_patterns_and_colotomic_brackets(
+            colotomic_patterns_to_add, colotomic_brackets_to_add
+        )
 
 
 def _make_converted_colotomic_patterns():
@@ -85,7 +123,7 @@ def _render_drone_instrument(
     simultaneous_event_converter = symmetrical.time_brackets.TimeBracketsToSimultaneousEventConverter(
         instruments.ID_DRONE, instruments.INSTRUMENT_TO_N_VOICES[instruments.ID_DRONE]
     )
-    sound_file_converter = frontends.csound.DroneSimultaneousEventToSoundFileConverter()
+    sound_file_converter = frontends.midi.DroneEventToMidiFileConverter()
     simultaneous_event = simultaneous_event_converter.convert(relevant_time_brackets)
     sound_file_converter.convert(simultaneous_event)
 
