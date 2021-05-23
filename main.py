@@ -4,7 +4,7 @@ from ot2.events import time_brackets
 
 
 def _run():
-    from ot2.generators import colotomic_brackets
+    from ot2.generators.side_effects import colotomic_brackets
 
     colotomic_bracket_generators = (
         colotomic_brackets.TestColotomicBracketGenerator(),
@@ -68,7 +68,7 @@ def _render_colotomic_pattern(converted_patterns):
     lilypond_file = lilypond_file_converter.convert(
         ot2.constants.colotomic_pattern.COLOTOMIC_PATTERNS
     )
-    abjad.persist.as_pdf(lilypond_file, 'builds/percussion_brackets.pdf')
+    abjad.persist.as_pdf(lilypond_file, "builds/percussion_brackets.pdf")
     # abjad.show(lilypond_file)
 
 
