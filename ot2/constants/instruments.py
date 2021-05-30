@@ -23,6 +23,33 @@ ID_SUS0 = "sustaining0"
 ID_SUS1 = "sustaining1"
 ID_SUS2 = "sustaining2"
 
+INSTRUMENT_ID_TO_LONG_INSTRUMENT_NAME = {
+    ID_PERCUSSIVE: "percussive instrument(s)",
+    ID_DRONE: "drone",
+    ID_SUS0: "sustaining instrument 1",
+    ID_SUS1: "sustaining instrument 2",
+    ID_SUS2: "sustaining instrument 3",
+    ID_NOISE: "noise",
+}
+
+INSTRUMENT_ID_TO_SHORT_INSTRUMENT_NAME = {
+    ID_PERCUSSIVE: "p.i,",
+    ID_DRONE: "d.",
+    ID_SUS0: "s.i. 1",
+    ID_SUS1: "s.i. 2",
+    ID_SUS2: "s.i. 3",
+    ID_NOISE: "n.",
+}
+
+INSTRUMENT_ID_TO_INDEX = {
+    ID_SUS0: 0,
+    ID_SUS1: 1,
+    ID_SUS2: 2,
+    ID_DRONE: 3,
+    ID_PERCUSSIVE: 4,
+    ID_NOISE: 5,
+}
+
 AMBITUS_SUSTAINING_INSTRUMENTS_WESTERN_PITCHES = ambitus.Ambitus(
     pitches.WesternPitch("af", 3), pitches.WesternPitch("e", 5),
 )

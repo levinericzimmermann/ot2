@@ -3,6 +3,3 @@
 from . import zimmermann_constants
 
 from . import zimmermann
-from . import colotomic_patterns
-from . import colotomic_brackets
-from . import side_effects
