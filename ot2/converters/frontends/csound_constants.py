@@ -11,7 +11,7 @@ PERCUSSION_PITCH_TO_PERCUSSION_SAMPLES_CYCLE = {
         (
             "ot2/samples/percussion/framedrum/HDrumL_HitMuted_v2_rr1_Sum.wav",
             "ot2/samples/percussion/framedrum/HDrumS_HitMuted_v2_rr1_Sum.wav",
-            "ot2/samples/percussion/framedrum/hdruml_hitmuted_v2_rr2_sum.wav",
+            "ot2/samples/percussion/framedrum/HDrumL_HitMuted_v2_rr1_Sum.wav",
         )
     ),
     "d": itertools.cycle(
