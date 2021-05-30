@@ -9,58 +9,85 @@ import abjad  # type: ignore
 
 from mutwo.events import basic
 from mutwo.events import music
-from mutwo.converters.frontends import abjad as mutwo_abjad
 
-from ot2.events import time_brackets
 from ot2.converters.frontends import abjad as ot2_abjad
+from ot2.constants import instruments
+from ot2.events import basic as ot2_basic
 
 
-class TimeBracketToAbjadScoreConverterTest(unittest.TestCase):
+class AbjadScoreToLilypondFileConverterTest(unittest.TestCase):
     def test_convert(self):
-        time_bracket = time_brackets.TimeBracket(
+        musical_data = ot2_basic.TaggedSimultaneousEvent(
             [
                 basic.SequentialEvent(
                     [
-                        music.NoteLike(p, r)
-                        for p, r in zip(
-                            "1/1 9/8 7/6 4/3 11/8 11/10 4/5".split(" "),
-                            (
-                                0.125,
-                                0.25,
-                                0.125,
-                                fractions.Fraction(3, 10),
-                                fractions.Fraction(1, 10),
-                                fractions.Fraction(1, 10),
-                                fractions.Fraction(2, 3),
-                            ),
-                        )
+                        music.NoteLike("1/1", 1, "pp"),
+                        music.NoteLike("15/16", 1, "pp"),
+                        music.NoteLike([], 0.5, "pp"),
+                        music.NoteLike("16/15", 0.75, "p"),
+                        music.NoteLike([], 1.25, "p"),
+                        music.NoteLike('9/8', 1.5, "p"),
                     ]
-                )
+                ),
+                basic.SequentialEvent(
+                    [
+                        music.NoteLike("5/8", 0.5, "pp"),
+                        music.NoteLike("11/16", 1, "pp"),
+                        music.NoteLike([], 1, "pp"),
+                        music.NoteLike("3/4", 0.75, "p"),
+                        music.NoteLike([], 0.25, "p"),
+                        music.NoteLike("3/4", 0.75, "p"),
+                    ]
+                ),
+                basic.SequentialEvent(
+                    [
+                        music.NoteLike([], 0.75, "pp"),
+                        music.NoteLike("11/9", 1, "pp"),
+                        music.NoteLike("4/3", 1, "pp"),
+                        music.NoteLike("3/2", 0.75, "ppp"),
+                        music.NoteLike([], 0.75, "ppp"),
+                        music.NoteLike("3/5", 0.75, "ppp"),
+                    ]
+                ),
+                basic.SequentialEvent(
+                    [
+                        music.NoteLike("1/4", 4, "pp"),
+                        music.NoteLike([], 1, "pp"),
+                        music.NoteLike("1/4", 1, "pp"),
+                    ]
+                ),
+                basic.SequentialEvent(
+                    [
+                        music.NoteLike("g", 0.25, "pp"),
+                        music.NoteLike("g", 0.5, "pp"),
+                        music.NoteLike("g", 0.25, "pp"),
+                        music.NoteLike("b", fractions.Fraction(1, 6), "pp"),
+                        music.NoteLike("f", fractions.Fraction(1, 12), "pp"),
+                        music.NoteLike("g", 1, "pp"),
+                        music.NoteLike("f", 1, "pp"),
+                        music.NoteLike("g", 1, "pp"),
+                        music.NoteLike("g", 1, "pp"),
+                    ]
+                ),
+                basic.SequentialEvent([music.NoteLike([], 6, "ppp")]),
             ],
-            (5, 15),
-            (30, 35),
+            tag_to_event_index=instruments.INSTRUMENT_ID_TO_INDEX,
         )
 
-        sequential_event_to_abjad_voice_converter = mutwo_abjad.SequentialEventToAbjadVoiceConverter(
-            mutwo_pitch_to_abjad_pitch_converter=mutwo_abjad.MutwoPitchToHEJIAbjadPitchConverter()
+        abjad_score_converter = ot2_abjad.SequentialEventToAbjadScoreConverter(
+            (
+                abjad.TimeSignature((4, 2)),
+                abjad.TimeSignature((4, 2)),
+                abjad.TimeSignature((4, 2)),
+                abjad.TimeSignature((4, 2)),
+            )
         )
+        abjad_score = abjad_score_converter.convert(musical_data)
 
-        time_bracket_to_abjad_score_converter = ot2_abjad.TimeBracketToAbjadScoreConverter(
-            0, sequential_event_to_abjad_voice_converter
-        )
+        lilypond_file_converter = ot2_abjad.AbjadScoreToLilypondFileConverter()
+        lilypond_file = lilypond_file_converter.convert(abjad_score)
 
-        abjad_score = time_bracket_to_abjad_score_converter.convert(
-            ((0,), time_bracket)
-        )
-        # TODO(abstrahiere diese zwei zeilen irgendwo, in sowas wie "prepare_lilypond_file")
-        abjad.attach(
-            abjad.LilyPondLiteral(r'\accidentalStyle "dodecaphonic"'),
-            abjad_score[0][0][0][0],
-        )
-        lilypond_file = abjad.LilyPondFile(
-            items=[abjad_score], includes=["ekme-heji-ref-c.ily"]
-        )
-        # abjad.persist.as_pdf(lilypond_file, "test.pdf")
+        abjad.persist.as_pdf(lilypond_file, "tests/converters/frontends/score_test.pdf")
 
 
 if __name__ == "__main__":

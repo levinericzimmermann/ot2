@@ -13,3 +13,19 @@ class AssignedSimultaneousEvent(basic.SimultaneousEvent, typing.Generic[T]):
     def __init__(self, events: typing.Sequence[abc.Event], instrument: str):
         super().__init__(events)
         self.instrument = instrument
+
+
+class TaggedSimultaneousEvent(basic.SimultaneousEvent):
+    def __init__(
+        self,
+        events: typing.Sequence[abc.Event],
+        tag_to_event_index: typing.Dict[str, int],
+    ):
+        super().__init__(events)
+        self.tag_to_event_index = tag_to_event_index
+
+    def __getitem__(self, index_or_slice: typing.Union[str, slice, int]):
+        if index_or_slice in self.tag_to_event_index:
+            index_or_slice = self.tag_to_event_index[index_or_slice]
+
+        return super().__getitem__(index_or_slice)
