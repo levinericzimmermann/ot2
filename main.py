@@ -12,17 +12,20 @@ def _run():
 
     colotomic_bracket_generators = (
         generators.colotomic_brackets.HoquetusDingDong(
-            (11, 5, 11, 3, 5),
+            (3, 7, 3, 7, 3, 7),
             lambda: events.colotomic_brackets.ColotomicPattern(
                 [
                     events.colotomic_brackets.ColotomicElement(
                         [music.NoteLike("g", 6, "mp")]
                     ),
                     events.colotomic_brackets.ColotomicElement(
-                        [music.NoteLike("f", 4, "mp")]
+                        [music.NoteLike("f", 3, "mp")]
                     ),
                     events.colotomic_brackets.ColotomicElement(
-                        [music.NoteLike("f", 4, "mp")]
+                        [music.NoteLike("f", 0.5, "mp"), music.NoteLike("f", 3.5, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("f", 3, "mp")]
                     ),
                     events.colotomic_brackets.ColotomicElement(
                         [music.NoteLike("f", 4, "mp")]
@@ -31,15 +34,22 @@ def _run():
                         [music.NoteLike("b", 6, "mp")]
                     ),
                     events.colotomic_brackets.ColotomicElement(
-                        [music.NoteLike("f", 4, "mp")]
+                        [music.NoteLike("f", 2, "mp")]
                     ),
                     events.colotomic_brackets.ColotomicElement(
-                        [music.NoteLike("f", 4, "mp")]
+                        [music.NoteLike("f", 2, "mp")]
+                    ),
+                    events.colotomic_brackets.ColotomicElement(
+                        [music.NoteLike("f", 3, "mp")]
                     ),
                 ],
-                tempo=tempos.TempoPoint(40),
+                tempo=tempos.TempoPoint(45),
                 n_repetitions=3,
             ),
+            n_colotomic_elements_for_main_prime=4,
+            n_colotomic_elements_for_side_prime=3,
+            n_tones_for_main_prime=3,
+            n_tones_for_side_prime=2,
         ),
     )
     for colotomic_bracket_generator in colotomic_bracket_generators:
