@@ -1,3 +1,5 @@
+import functools
+import operator
 import itertools
 import typing
 
@@ -89,8 +91,19 @@ class HoquetusDingDong(object):
         )
         self._n_tones_for_main_prime = n_tones_for_main_prime
         self._n_tones_for_side_prime = n_tones_for_side_prime
-        self._nth_sustaining_instrument_makes_drone_support = (
-            nth_sustaining_instrument_makes_drone_support
+        self._instrument_for_drone_support = (
+            instruments.ID_SUS0,
+            instruments.ID_SUS1,
+            instruments.ID_SUS2,
+        )[nth_sustaining_instrument_makes_drone_support]
+        self._free_sustaining_instruments = tuple(
+            sustaining_instrument
+            for sustaining_instrument in (
+                instruments.ID_SUS0,
+                instruments.ID_SUS1,
+                instruments.ID_SUS2,
+            )
+            if sustaining_instrument != self._instrument_for_drone_support
         )
         self._positive_pitches_per_unit = positive_pitches_per_units
         self._negative_pitches_per_unit = tuple(
@@ -103,6 +116,41 @@ class HoquetusDingDong(object):
     # ######################################################## #
     #                     static methods                       #
     # ######################################################## #
+
+    @staticmethod
+    def _make_mono_direction_phrase(
+        direction: bool,
+        n_pitches: int,
+        potential_goals: typing.Tuple[pitches.JustIntonationPitch, ...],
+        available_pitches: typing.Tuple[pitches.JustIntonationPitch, ...],
+    ):
+        n_available_pitches = len(available_pitches)
+        solutions = []
+        for goal in potential_goals:
+            position = available_pitches.index(goal)
+            if direction:
+                if position >= n_pitches:
+                    solutions.append(
+                        (available_pitches[position - n_pitches + 1 : position + 1])
+                    )
+            else:
+                if position + n_pitches <= n_available_pitches:
+                    solutions.append(
+                        tuple(
+                            reversed(available_pitches[position : position + n_pitches])
+                        )
+                    )
+
+        if not solutions:
+            solutions = HoquetusDingDong._make_mono_direction_phrase(
+                not direction, n_pitches, potential_goals, available_pitches
+            )
+
+        if solutions:
+            return solutions[0]
+
+        else:
+            return tuple(potential_goals[0] for _ in range(n_pitches))
 
     # ######################################################## #
     #                    private methods                       #
@@ -169,10 +217,10 @@ class HoquetusDingDong(object):
 
         if tonality:
             root = pitches.JustIntonationPitch("{}/1".format(prime))
-            intervals = self._positive_pitches_per_unit
+            intervals = self._negative_pitches_per_unit
         else:
             root = pitches.JustIntonationPitch("1/{}".format(prime))
-            intervals = self._negative_pitches_per_unit
+            intervals = self._positive_pitches_per_unit
 
         root.add(self._modulation_pitch)
         root.normalize()
@@ -271,7 +319,7 @@ class HoquetusDingDong(object):
             ding_dong_units.append(blurry_unit)
 
         clear_unit, colotomic_element_indicator = self._make_clear_unit(
-            colotomic_element_indicator, next(quality_cycle), self._prime_per_unit[-1]
+            colotomic_element_indicator, not quality, self._prime_per_unit[-1]
         )
         ding_dong_units.append(clear_unit)
 
@@ -353,23 +401,355 @@ class HoquetusDingDong(object):
 
         return tuple(drone_colotomic_brackets)
 
+    def _make_position_ranges_for_drone_support_brackets(
+        self, nth_ding_dong_unit: int, current_ding_dong_unit: DingDongUnit
+    ) -> typing.Tuple[
+        typing.Tuple[
+            colotomic_brackets.ColotomicElementIndicator,
+            colotomic_brackets.ColotomicElementIndicator,
+        ],
+        typing.Tuple[
+            colotomic_brackets.ColotomicElementIndicator,
+            colotomic_brackets.ColotomicElementIndicator,
+        ],
+    ]:
+        if nth_ding_dong_unit == 0:
+            start_range = current_ding_dong_unit.colotomic_indicators[:2]
+        else:
+            start_range = (
+                self._ding_dong_units[nth_ding_dong_unit - 2].colotomic_indicators[-1:]
+                + self._ding_dong_units[nth_ding_dong_unit - 1].colotomic_indicators[:1]
+            )
+
+        try:
+            next_ding_dong_unit = self._ding_dong_units[nth_ding_dong_unit + 1]
+        except IndexError:
+            next_ding_dong_unit = None
+
+        if next_ding_dong_unit:
+            end_range = (
+                next_ding_dong_unit.colotomic_indicators[-1],
+                self._ding_dong_units[nth_ding_dong_unit + 2].colotomic_indicators[1],
+            )
+        else:
+            end_range = current_ding_dong_unit.colotomic_indicators[-2:]
+
+        return start_range, end_range
+
     def _make_colotomic_brackets_for_drone_support(
         self,
     ) -> typing.Tuple[colotomic_brackets.ColotomicBracket, ...]:
-        return self._make_colotomic_brackets_for_drone(
-            2,
-            (instruments.ID_SUS0, instruments.ID_SUS1, instruments.ID_SUS2)[
-                self._nth_sustaining_instrument_makes_drone_support
+
+        drone_colotomic_brackets: typing.List[colotomic_brackets.ColotomicBracket] = []
+
+        for nth_ding_dong_unit in range(2, len(self._ding_dong_units), 4):
+            current_ding_dong_unit = self._ding_dong_units[nth_ding_dong_unit]
+            start_range, end_range = self._make_position_ranges_for_drone_brackets(
+                nth_ding_dong_unit, current_ding_dong_unit
+            )
+
+            note0 = music.NoteLike(
+                instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+                    self._ding_dong_units[nth_ding_dong_unit - 2].root
+                )[
+                    0
+                ],
+                0.25,
+                "p",
+            )
+            note1 = music.NoteLike(
+                instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+                    current_ding_dong_unit.root
+                )[
+                    0
+                ],
+                1,
+                "p",
+            )
+
+            seq_event = basic.SequentialEvent([note0, note1])
+
+            try:
+                next_ding_dong_unit = self._ding_dong_units[nth_ding_dong_unit + 1]
+            except IndexError:
+                next_ding_dong_unit = None
+
+            if next_ding_dong_unit:
+                seq_event.append(
+                    music.NoteLike(
+                        instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+                            self._ding_dong_units[nth_ding_dong_unit + 2].root
+                        )[
+                            0
+                        ],
+                        0.25,
+                        "p",
+                    )
+                )
+
+            colotomic_bracket = colotomic_brackets.ColotomicBracket(
+                (
+                    ot2_basic.AssignedSimultaneousEvent(
+                        [seq_event], self._instrument_for_drone_support,
+                    ),
+                ),
+                start_range,
+                end_range,
+            )
+
+            drone_colotomic_brackets.append(colotomic_bracket)
+
+        return tuple(drone_colotomic_brackets)
+        drone_support_brackets = list(
+            self._make_colotomic_brackets_for_drone(
+                2,
+                self._instrument_for_drone_support,
+                instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES,
+            )
+        )
+
+        return tuple(drone_support_brackets)
+
+    def _make_range_for_moving_polos(
+        self,
+        nth_ding_dong_unit: int,
+        current_ding_dong_unit: DingDongUnit,
+        next_ding_dong_unit: DingDongUnit,
+    ):
+        start_or_start_range = (
+            current_ding_dong_unit.colotomic_indicators[1],
+            current_ding_dong_unit.colotomic_indicators[2],
+        )
+        end_or_end_range = (
+            next_ding_dong_unit.colotomic_indicators[0],
+            # next_ding_dong_unit.colotomic_indicators[-1],
+            self._ding_dong_units[nth_ding_dong_unit + 2].colotomic_indicators[0],
+        )
+        return start_or_start_range, end_or_end_range
+
+    def _make_pitches_for_moving_polos(
+        self, current_ding_dong_unit: DingDongUnit, next_ding_dong_unit: DingDongUnit,
+    ) -> typing.Tuple[pitches.JustIntonationPitch, ...]:
+        potential_connection_pitches = instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+            next_ding_dong_unit.connection_pitch
+        )
+        available_pitches = tuple(
+            sorted(
+                functools.reduce(
+                    operator.add,
+                    (
+                        instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+                            pitch
+                        )
+                        for pitch in current_ding_dong_unit.pitches
+                    ),
+                )
+            )
+        )
+        moving_polos_pitches = HoquetusDingDong._make_mono_direction_phrase(
+            current_ding_dong_unit.quality,
+            (self._n_tones_for_side_prime, self._n_tones_for_main_prime)[
+                current_ding_dong_unit.quality
             ],
-            instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES,
+            potential_connection_pitches,
+            available_pitches,
+        )
+        return tuple(moving_polos_pitches)
+
+    def _make_moving_polos(
+        self,
+        nth_ding_dong_unit: int,
+        current_ding_dong_unit: DingDongUnit,
+        next_ding_dong_unit: DingDongUnit,
+    ) -> colotomic_brackets.ColotomicBracket:
+        start_or_start_range, end_or_end_range = self._make_range_for_moving_polos(
+            nth_ding_dong_unit, current_ding_dong_unit, next_ding_dong_unit
+        )
+        polos_pitches = self._make_pitches_for_moving_polos(
+            current_ding_dong_unit, next_ding_dong_unit
+        )
+        new_colotomic_bracket = colotomic_brackets.ColotomicBracket(
+            (
+                ot2_basic.AssignedSimultaneousEvent(
+                    [
+                        basic.SequentialEvent(
+                            [music.NoteLike(pitch, 1, "mp") for pitch in polos_pitches]
+                        )
+                    ],
+                    self._free_sustaining_instruments[0],
+                ),
+            ),
+            start_or_start_range,
+            end_or_end_range,
+        )
+        return new_colotomic_bracket
+
+    @staticmethod
+    def _make_range_for_ending_polos(current_ding_dong_unit: DingDongUnit,):
+        start_or_start_range = current_ding_dong_unit.colotomic_indicators[:2]
+        end_or_end_range = current_ding_dong_unit.colotomic_indicators[-2:]
+        return start_or_start_range, end_or_end_range
+
+    def _make_ending_polos(
+        self, current_ding_dong_unit: DingDongUnit
+    ) -> colotomic_brackets.ColotomicBracket:
+        start_or_start_range, end_or_end_range = self._make_range_for_ending_polos(
+            current_ding_dong_unit
+        )
+        ending_pitch = instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+            current_ding_dong_unit.root
+        )[
+            0
+        ]
+        new_colotomic_bracket = colotomic_brackets.ColotomicBracket(
+            (
+                ot2_basic.AssignedSimultaneousEvent(
+                    [basic.SequentialEvent([music.NoteLike(ending_pitch, 1, "mp")])],
+                    self._free_sustaining_instruments[0],
+                ),
+            ),
+            start_or_start_range,
+            end_or_end_range,
+        )
+        return new_colotomic_bracket
+
+    def _make_polos(
+        self,
+        nth_ding_dong_unit: int,
+        current_ding_dong_unit: DingDongUnit,
+        next_ding_dong_unit: typing.Optional[DingDongUnit],
+    ) -> colotomic_brackets.ColotomicBracket:
+        if next_ding_dong_unit:
+            return self._make_moving_polos(
+                nth_ding_dong_unit, current_ding_dong_unit, next_ding_dong_unit
+            )
+
+        else:
+            return self._make_ending_polos(current_ding_dong_unit)
+
+    def _make_range_for_moving_sangsih(
+        self,
+        nth_ding_dong_unit: int,
+        current_ding_dong_unit: DingDongUnit,
+        next_ding_dong_unit: DingDongUnit,
+    ):
+        start_or_start_range = (
+            # current_ding_dong_unit.colotomic_indicators[-1],
+            next_ding_dong_unit.colotomic_indicators[0],
+            next_ding_dong_unit.colotomic_indicators[-1],
+        )
+        end_or_end_range = (
+            self._ding_dong_units[nth_ding_dong_unit + 2].colotomic_indicators[0],
+            # self._ding_dong_units[nth_ding_dong_unit + 2].colotomic_indicators[-1],
+            self._ding_dong_units[nth_ding_dong_unit + 2].colotomic_indicators[1],
+        )
+
+        return start_or_start_range, end_or_end_range
+
+    def _make_pitches_for_moving_sangsih(
+        self,
+        nth_ding_dong_unit: int,
+        current_ding_dong_unit: DingDongUnit,
+        next_ding_dong_unit: DingDongUnit,
+    ) -> typing.Tuple[pitches.JustIntonationPitch, ...]:
+        potential_connection_pitches = instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+            next_ding_dong_unit.connection_pitch
+        )
+        available_pitches = tuple(
+            sorted(
+                functools.reduce(
+                    operator.add,
+                    (
+                        instruments.AMBITUS_SUSTAINING_INSTRUMENTS_JUST_INTONATION_PITCHES.find_all_pitch_variants(
+                            pitch
+                        )
+                        for pitch in self._ding_dong_units[
+                            nth_ding_dong_unit + 2
+                        ].pitches
+                    ),
+                )
+            )
+        )
+        moving_sangsih_pitches = HoquetusDingDong._make_mono_direction_phrase(
+            current_ding_dong_unit.quality,
+            (self._n_tones_for_main_prime, self._n_tones_for_side_prime)[
+                current_ding_dong_unit.quality
+            ],
+            potential_connection_pitches,
+            available_pitches,
+        )
+        moving_sangsih_pitches = tuple(reversed(moving_sangsih_pitches))
+        return tuple(moving_sangsih_pitches)
+
+    def _make_moving_sangsih(
+        self,
+        nth_ding_dong_unit: int,
+        current_ding_dong_unit: DingDongUnit,
+        next_ding_dong_unit: DingDongUnit,
+    ) -> colotomic_brackets.ColotomicBracket:
+        start_or_start_range, end_or_end_range = self._make_range_for_moving_sangsih(
+            nth_ding_dong_unit, current_ding_dong_unit, next_ding_dong_unit
+        )
+        sangsih_pitches = self._make_pitches_for_moving_sangsih(
+            nth_ding_dong_unit, current_ding_dong_unit, next_ding_dong_unit
+        )
+        new_colotomic_bracket = colotomic_brackets.ColotomicBracket(
+            (
+                ot2_basic.AssignedSimultaneousEvent(
+                    [
+                        basic.SequentialEvent(
+                            [
+                                music.NoteLike(pitch, 1, "mp")
+                                for pitch in sangsih_pitches
+                            ]
+                        )
+                    ],
+                    self._free_sustaining_instruments[1],
+                ),
+            ),
+            start_or_start_range,
+            end_or_end_range,
+        )
+        return new_colotomic_bracket
+
+    def _make_sangsih(
+        self,
+        nth_ding_dong_unit: int,
+        current_ding_dong_unit: DingDongUnit,
+        next_ding_dong_unit: typing.Optional[DingDongUnit],
+    ) -> colotomic_brackets.ColotomicBracket:
+        return self._make_moving_sangsih(
+            nth_ding_dong_unit, current_ding_dong_unit, next_ding_dong_unit
         )
 
     def _make_colotomic_brackets_for_hoquetus(
         self,
     ) -> typing.Tuple[colotomic_brackets.ColotomicBracket, ...]:
-        return self._make_colotomic_brackets_for_drone(
-            2, instruments.ID_SUS1,
-        ) + self._make_colotomic_brackets_for_drone(2, instruments.ID_SUS2,)
+        hoquetus_colotomic_brackets: typing.List[
+            colotomic_brackets.ColotomicBracket
+        ] = []
+
+        for nth_ding_dong_unit in range(0, len(self._ding_dong_units), 2):
+
+            current_ding_dong_unit = self._ding_dong_units[nth_ding_dong_unit]
+            try:
+                next_ding_dong_unit = self._ding_dong_units[nth_ding_dong_unit + 1]
+            except IndexError:
+                next_ding_dong_unit = None
+
+            hoquetus_colotomic_brackets.append(
+                self._make_polos(
+                    nth_ding_dong_unit, current_ding_dong_unit, next_ding_dong_unit
+                )
+            )
+            if next_ding_dong_unit:
+                hoquetus_colotomic_brackets.append(
+                    self._make_sangsih(
+                        nth_ding_dong_unit, current_ding_dong_unit, next_ding_dong_unit
+                    )
+                )
+
+        return tuple(hoquetus_colotomic_brackets)
 
     # ######################################################## #
     #                     public methods                       #
