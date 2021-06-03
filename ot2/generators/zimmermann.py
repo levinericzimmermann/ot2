@@ -1,3 +1,4 @@
+import itertools
 import typing
 
 try:
@@ -125,3 +126,75 @@ class SymmetricalPermutation(object):
         typing.Tuple[str, str], typing.Tuple[pitches.JustIntonationPitch, ...]
     ]:
         return self._connections
+
+
+def make_nested_loop(*loop: typing.Sequence[int]) -> typing.Tuple:
+    """Build nested loops from loop durations.
+
+    :param loop: Loops of durations which indicate how often
+        items of the next level shall be repeated. From outer level
+        to inner level.
+    :type loop: typing.Sequence[int]
+
+    **Example:**
+
+    >>> from ot2.generators import zimmermann
+    >>> nested_loop = make_nested_loop((3, 2), (2, 2, 1))
+    >>> nested_loop.get_parameter('duration')
+    ((2, 2, 1), (2, 2), (1, 2, 2), (1, 2), (2, 1, 2), (2, 1))
+
+    The function repeat loops until all loops are back to their
+    start position.
+    """
+
+    try:
+        assert len(loop) >= 1
+    except AssertionError:
+        message = "Found only {} loops ({}). Please provide at least two loops!".format(
+            len(loop), loop
+        )
+        raise ValueError(message)
+
+    class Looper(object):
+        def __init__(self, *item: int):
+            self._loop = itertools.cycle(item)
+            self._position = itertools.cycle(range(len(item)))
+            self._current_position = 0
+
+        def __next__(self):
+            self._current_position = next(self._position)
+            return next(self._loop)
+
+        @property
+        def position(self) -> int:
+            return self._current_position
+
+    loopers = tuple(Looper(*lo) for lo in loop)
+
+    @typing.overload
+    def build_loop(n_times: int, loopers: None) -> int:
+        ...
+
+    @typing.overload
+    def build_loop(n_times: int, loopers: typing.Tuple[Looper, ...]) -> typing.Tuple:
+        ...
+
+    def build_loop(
+        n_times: int, loopers: typing.Optional[typing.Tuple[Looper, ...]]
+    ) -> typing.Union[typing.Tuple, int]:
+        if not loopers:
+            return n_times
+        else:
+            loops = []
+            for _ in range(n_times):
+                remaining = loopers[1:]
+                if not remaining:
+                    remaining = None
+                loops.append(build_loop(next(loopers[0]), loopers[1:]))
+            return tuple(loops)
+
+    loops = []
+    loops.append(build_loop(next(loopers[0]), loopers[1:]))
+    while any(looper.position != 0 for looper in loopers):
+        loops.append(build_loop(next(loopers[0]), loopers[1:]))
+    return tuple(loops)
