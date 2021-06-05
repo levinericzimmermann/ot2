@@ -8,7 +8,6 @@ try:
 except ImportError:
     import fractions  # type: ignore
 
-from mutwo import converters
 from mutwo.parameters import pitches
 from ortools.sat.python import cp_model
 
