@@ -15,7 +15,7 @@ class AssignedSimultaneousEvent(basic.SimultaneousEvent, typing.Generic[T]):
         self.instrument = instrument
 
 
-class TaggedSimultaneousEvent(basic.SimultaneousEvent):
+class TaggedSimultaneousEvent(basic.SimultaneousEvent, typing.Generic[T]):
     def __init__(
         self,
         events: typing.Sequence[abc.Event],
