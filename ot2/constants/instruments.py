@@ -33,7 +33,7 @@ INSTRUMENT_ID_TO_LONG_INSTRUMENT_NAME = {
 }
 
 INSTRUMENT_ID_TO_SHORT_INSTRUMENT_NAME = {
-    ID_PERCUSSIVE: "p.i,",
+    ID_PERCUSSIVE: "p.i.",
     ID_DRONE: "d.",
     ID_SUS0: "s.i. 1",
     ID_SUS1: "s.i. 2",
