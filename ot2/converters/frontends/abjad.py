@@ -1,3 +1,4 @@
+import fractions
 import typing
 
 import abjad  # type: ignore
@@ -5,6 +6,7 @@ import expenvelope  # type: ignore
 
 from mutwo.converters import abc as converters_abc
 from mutwo.converters.frontends import abjad as mutwo_abjad
+from mutwo.events import basic
 from mutwo.events import music
 from mutwo import parameters as mutwo_parameters
 
@@ -25,7 +27,7 @@ class ColotomicPitchToMutwoPitchConverter(mutwo_abjad.MutwoPitchToAbjadPitchConv
         return super().convert(mutwo_pitch)
 
 
-class SequentialEventToAbjadScoreConverter(converters_abc.Converter):
+class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
     def __init__(
         self,
         time_signatures: typing.Sequence[abjad.TimeSignature] = (
@@ -38,6 +40,19 @@ class SequentialEventToAbjadScoreConverter(converters_abc.Converter):
         self._instrument_id_to_sequential_event_to_abjad_voice_converter = (
             self._make_instrument_id_to_sequential_event_to_abjad_voice_converter()
         )
+
+    @staticmethod
+    def _prepare_percussion_sequential_event(
+        sequential_event: basic.SequentialEvent[music.NoteLike],
+    ) -> basic.SequentialEvent:
+        absolute_times = sequential_event.absolute_times
+        for start, event in zip(reversed(absolute_times), reversed(sequential_event)):
+            if event.duration > fractions.Fraction(1, 4) and event.pitch_or_pitches:
+                sequential_event.squash_in(
+                    start + fractions.Fraction(1, 4),
+                    music.NoteLike([], event.duration - fractions.Fraction(1, 4)),
+                )
+        return sequential_event
 
     @staticmethod
     def _prepare_voice(voice: abjad.Voice, instrument_id: str):
@@ -83,8 +98,13 @@ class SequentialEventToAbjadScoreConverter(converters_abc.Converter):
         abjad.attach(abjad.LilyPondLiteral("\\hide Staff.BarLine"), first_leaf)
 
         last_leaf = abjad.get.leaf(voice, -1)
-        abjad.attach(abjad.LilyPondLiteral(r'\undo \hide Staff.BarLine'), last_leaf)
-        abjad.attach(abjad.BarLine('|.', format_slot='absolute_after'), last_leaf)
+        abjad.attach(abjad.BarLine("|.", format_slot="absolute_after"), last_leaf)
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                r"\undo \hide Staff.BarLine", format_slot="absolute_after"
+            ),
+            last_leaf,
+        )
 
     @staticmethod
     def _prepare_duration_line_voice(voice: abjad.Voice):
@@ -150,7 +170,10 @@ class SequentialEventToAbjadScoreConverter(converters_abc.Converter):
         }
 
     def convert(
-        self, tagged_simultaneous_event: ot2_basic.TaggedSimultaneousEvent
+        self,
+        tagged_simultaneous_event: ot2_basic.TaggedSimultaneousEvent[
+            basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
+        ],
     ) -> abjad.Score:
         staff_group = abjad.StaffGroup([])
 
@@ -163,27 +186,39 @@ class SequentialEventToAbjadScoreConverter(converters_abc.Converter):
             converter = self._instrument_id_to_sequential_event_to_abjad_voice_converter[
                 instrument_id
             ]
-            sequential_event = tagged_simultaneous_event[instrument_id]
+            simultaneous_event = tagged_simultaneous_event[instrument_id]
 
-            difference = duration - sequential_event.duration
-            if difference:
-                sequential_event.append(music.NoteLike([], difference, 'pp'))
+            staff = abjad.Staff([], simultaneous=True)
+            staff.remove_commands.append("Time_signature_engraver")
+            for sequential_event in simultaneous_event:
+                difference = duration - sequential_event.duration
+                if difference:
+                    sequential_event.append(music.NoteLike([], difference))
 
-            abjad_voice = converter.convert(sequential_event)
+                if instrument_id == instruments.ID_PERCUSSIVE:
+                    sequential_event = self._prepare_percussion_sequential_event(
+                        sequential_event
+                    )
 
-            if instrument_id not in (instruments.ID_PERCUSSIVE, instruments.ID_NOISE):
-                self._prepare_duration_line_voice(abjad_voice)
+                abjad_voice = converter.convert(sequential_event)
 
-            if instrument_id == instruments.ID_PERCUSSIVE:
-                self._prepare_percussion_voice(abjad_voice)
-            elif instrument_id == instruments.ID_DRONE:
-                self._prepare_drone_voice(abjad_voice)
-            elif instrument_id == instruments.ID_NOISE:
-                self._prepare_percussion_voice(abjad_voice)
+                if instrument_id not in (
+                    instruments.ID_PERCUSSIVE,
+                    instruments.ID_NOISE,
+                ):
+                    self._prepare_duration_line_voice(abjad_voice)
 
-            self._prepare_voice(abjad_voice, instrument_id)
+                if instrument_id == instruments.ID_PERCUSSIVE:
+                    self._prepare_percussion_voice(abjad_voice)
+                elif instrument_id == instruments.ID_DRONE:
+                    self._prepare_drone_voice(abjad_voice)
+                elif instrument_id == instruments.ID_NOISE:
+                    self._prepare_percussion_voice(abjad_voice)
 
-            staff_group.append(abjad.Staff([abjad_voice]))
+                self._prepare_voice(abjad_voice, instrument_id)
+                staff.append(abjad_voice)
+
+            staff_group.append(staff)
 
         abjad_score = abjad.Score([staff_group])
         return abjad_score
