@@ -1,6 +1,6 @@
 from mutwo.parameters import pitches
 
-TUNEABLE_INTERVALS = {
+TUNEABLE_INTERVAL_TO_DIFFICULTY = {
     pitches.JustIntonationPitch("1/1").exponents: 0,
     pitches.JustIntonationPitch("8/7").exponents: 1,
     pitches.JustIntonationPitch("7/6").exponents: 0,
@@ -94,3 +94,8 @@ TUNEABLE_INTERVALS = {
     pitches.JustIntonationPitch("23/3").exponents: 0,
     pitches.JustIntonationPitch("8/1").exponents: 0,
 }
+
+TUNEABLE_INTERVALS = tuple(
+    pitches.JustIntonationPitch(exponents)
+    for exponents in TUNEABLE_INTERVAL_TO_DIFFICULTY.keys()
+)

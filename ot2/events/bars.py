@@ -15,9 +15,18 @@ class Bar(basic.SimultaneousEvent[basic.SequentialEvent[basic.SimpleEvent]]):
     def __init__(
         self,
         time_signature: typing.Tuple[int, int],
-        subdivisions: typing.Tuple[fractions.Fraction, ...],
-        grid: typing.Tuple[fractions.Fraction, ...],
+        subdivisions: typing.Optional[typing.Tuple[fractions.Fraction, ...]] = None,
+        grid: typing.Optional[typing.Tuple[fractions.Fraction, ...]] = None,
     ):
+        if not subdivisions:
+            subdivisions = basic.SequentialEvent(
+                [basic.SimpleEvent(fractions.Fraction(*time_signature))]
+            )
+        if not grid:
+            grid = basic.SequentialEvent(
+                [basic.SimpleEvent(fractions.Fraction(*time_signature))]
+            )
+
         self._time_signature = time_signature
         subdivisions = basic.SequentialEvent(
             [basic.SimpleEvent(subdivision) for subdivision in subdivisions]
@@ -37,17 +46,17 @@ class BarWithHarmony(Bar):
     def __init__(
         self,
         time_signature: typing.Tuple[int, int],
-        subdivisions: typing.Tuple[fractions.Fraction, ...],
-        grid: typing.Tuple[fractions.Fraction, ...],
+        subdivisions: typing.Optional[typing.Tuple[fractions.Fraction, ...]],
+        grid: typing.Optional[typing.Tuple[fractions.Fraction, ...]],
         pitch_weigth_pairs_per_beat: typing.Tuple[
-            typing.Tuple[typing.Tuple[pitches.JustIntonationPitch, float], ...],...
-        ],
+            typing.Tuple[typing.Tuple[pitches.JustIntonationPitch, float], ...], ...
+        ] = (tuple([]),),
         harmony_grid_positions_pairs: typing.Tuple[
             typing.Tuple[
                 typing.Tuple[pitches.JustIntonationPitch, ...], typing.Tuple[int, ...]
             ],
             ...,
-        ],
+        ] = (tuple([]),),
     ):
         super().__init__(time_signature, subdivisions, grid)
         self._pitch_weigth_pairs_per_beat = pitch_weigth_pairs_per_beat

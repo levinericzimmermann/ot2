@@ -1,4 +1,5 @@
 # order matters!
+from . import analysis
 from . import parameters
 from . import events
 from . import constants

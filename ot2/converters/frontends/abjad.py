@@ -2,6 +2,7 @@ import fractions
 import typing
 
 import abjad  # type: ignore
+from abjadext import nauert
 import expenvelope  # type: ignore
 
 from mutwo.converters import abc as converters_abc
@@ -28,6 +29,13 @@ class ColotomicPitchToMutwoPitchConverter(mutwo_abjad.MutwoPitchToAbjadPitchConv
 
 
 class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
+    search_tree = nauert.UnweightedSearchTree(
+        definition={
+            2: {2: {2: {2: {2: {2: None,},},},},},
+            3: {2: {2: {2: {2: {2: None,},},},},},
+        },
+    )
+
     def __init__(
         self,
         time_signatures: typing.Sequence[abjad.TimeSignature] = (
@@ -135,7 +143,9 @@ class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
     ) -> mutwo_abjad.SequentialEventToAbjadVoiceConverter:
         return mutwo_abjad.SequentialEventToAbjadVoiceConverter(
             mutwo_abjad.SequentialEventToDurationLineBasedQuantizedAbjadContainerConverter(
-                self._time_signatures, tempo_envelope=self._tempo_envelope
+                self._time_signatures,
+                tempo_envelope=self._tempo_envelope,
+                search_tree=self.search_tree,
             ),
             mutwo_pitch_to_abjad_pitch_converter=mutwo_abjad.MutwoPitchToHEJIAbjadPitchConverter(),
         )
@@ -145,7 +155,9 @@ class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
     ) -> mutwo_abjad.SequentialEventToAbjadVoiceConverter:
         return mutwo_abjad.SequentialEventToAbjadVoiceConverter(
             mutwo_abjad.SequentialEventToQuantizedAbjadContainerConverter(
-                self._time_signatures, tempo_envelope=self._tempo_envelope
+                self._time_signatures,
+                tempo_envelope=self._tempo_envelope,
+                search_tree=self.search_tree,
             ),
             mutwo_pitch_to_abjad_pitch_converter=ColotomicPitchToMutwoPitchConverter(),
         )
@@ -281,6 +293,9 @@ class AbjadScoreToLilypondFileConverter(converters_abc.Converter):
         layout_block.items.append(r"short-indent = {}\mm".format(margin))
         layout_block.items.append(r"ragged-last = ##f")
         layout_block.items.append(r"indent = 23\mm".format(margin))
+        layout_block.items.append(
+            r"\override StaffGroup.BarLine.hair-thickness = 0.0001"
+        )
         return layout_block
 
     def convert(self, abjad_score: abjad.Score) -> abjad.LilyPondFile:

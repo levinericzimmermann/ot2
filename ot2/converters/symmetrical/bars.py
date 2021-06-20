@@ -19,7 +19,10 @@ class BarsToBarsWithHarmonyConverter(converters.abc.Converter):
 class SymmetricalPermutationBasedBarsToBarsWithHarmonyConverter(
     BarsToBarsWithHarmonyConverter
 ):
-    def __init__(self, symmetrical_permutation: zimmermann.SymmetricalPermutation):
+    def __init__(
+        self,
+        symmetrical_permutation: zimmermann.pitches.symmetrical_permutations.SymmetricalPermutation,
+    ):
         self._symmetrical_permutation = symmetrical_permutation
 
     @staticmethod
@@ -29,9 +32,9 @@ class SymmetricalPermutationBasedBarsToBarsWithHarmonyConverter(
         cycle = itertools.cycle(
             (
                 zimmermann_constants.OTONAL_HARMONY_NAME,
-                zimmermann_constants.F_OTONAL_HARMONY_NAME,
-                zimmermann_constants.UTONAL_HARMONY_NAME,
                 zimmermann_constants.F_UTONAL_HARMONY_NAME,
+                zimmermann_constants.UTONAL_HARMONY_NAME,
+                zimmermann_constants.F_OTONAL_HARMONY_NAME,
             )
         )
         return tuple(next(cycle) for _ in bars_to_convert)

@@ -31,12 +31,14 @@ def render_soundfiles(
         midi_file_converter.convert(simultaneous_event)
 
     def render_drone(simultaneous_event: basic.SimultaneousEvent):
-        sound_file_converter = ot2_midi.DroneEventToMidiFileConverter()
-        sound_file_converter.convert(simultaneous_event)
+        midi_file_converter = ot2_midi.DroneEventToMidiFileConverter()
+        midi_file_converter.convert(simultaneous_event)
 
     def render_percussion(simultaneous_event: basic.SimultaneousEvent):
-        csound_converter = ot2_csound.PercussiveSequentialEventToSoundFileConverter()
-        csound_converter.convert(simultaneous_event)
+        # csound_converter = ot2_csound.PercussiveSequentialEventToSoundFileConverter()
+        # csound_converter.convert(simultaneous_event)
+        midi_file_converter = ot2_midi.PercussiveEventToMidiFileConverter()
+        midi_file_converter.convert(simultaneous_event)
 
     tempo_converter = tempos.TempoConverter(tempo_envelope)
     tagged_simultaneous_event = ot2_basic.TaggedSimultaneousEvent(

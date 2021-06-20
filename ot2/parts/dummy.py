@@ -17,8 +17,8 @@ class DummyPart(abc.PartMaker):
     ]:
         converter = symmetrical.music.DummyDataToMusicConverter()
         return converter.convert(
-            zimmermann.LoopBarsConverter(0, (4, 4, 6), 6, 1, 3, 4, 15),
+            zimmermann.LoopBarsConverter(0, (6, 4,), 8, 2, 6, 4, 16),
             symmetrical.bars.SymmetricalPermutationBasedBarsToBarsWithHarmonyConverter(
-                zimmermann.SymmetricalPermutation(13, (1, 3, 9, 7))
+                zimmermann.SymmetricalPermutation(7, (1, 3, 5, 9,))
             ),
         )
