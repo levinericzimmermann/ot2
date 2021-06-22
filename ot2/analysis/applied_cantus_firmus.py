@@ -10,24 +10,6 @@ from ot2.analysis import applied_cantus_firmus_constants
 from ot2.analysis import cantus_firmus
 
 
-def _tie_rests(sequential_event: basic.SequentialEvent):
-    new_sequential_event = []
-    for nth_event, event in enumerate(sequential_event):
-        if nth_event != 0:
-            tests = (
-                len(event.pitch_or_pitches) == 0,
-                len(new_sequential_event[-1].pitch_or_pitches) == 0,
-            )
-
-            if all(tests):
-                new_sequential_event[-1].duration += event.duration
-            else:
-                new_sequential_event.append(event)
-        else:
-            new_sequential_event.append(event)
-    return basic.SequentialEvent(new_sequential_event)
-
-
 def make_applied_cantus_firmus(
     cantus_firmus: basic.SequentialEvent,
 ) -> basic.SequentialEvent[music.NoteLike]:
@@ -112,7 +94,7 @@ def illustrate_applied_cantus_firmus(cantus_firmus: basic.SequentialEvent):
         mutwo_abjad.SequentialEventToQuantizedAbjadContainerConverter(time_signatures),
         mutwo_pitch_to_abjad_pitch_converter=mutwo_abjad.MutwoPitchToHEJIAbjadPitchConverter(),
     )
-    abjad_voice = abjad_converter.convert(_tie_rests(cantus_firmus))
+    abjad_voice = abjad_converter.convert(cantus_firmus)
 
     abjad.attach(
         abjad.LilyPondLiteral('\\accidentalStyle "dodecaphonic"'), abjad_voice[0][0]
