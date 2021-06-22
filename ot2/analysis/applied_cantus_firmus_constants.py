@@ -1,1 +1,1 @@
-FACTOR = 4  # factor with which to multiply original rhythm
+FACTOR = 8  # factor with which to multiply original rhythm
