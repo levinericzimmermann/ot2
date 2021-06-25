@@ -175,8 +175,6 @@ APPLIED_CANTUS_FIRMUS = make_applied_cantus_firmus(
 )
 
 
-illustrate_applied_cantus_firmus(APPLIED_CANTUS_FIRMUS)
-
 if __name__ == "__main__":
     illustrate_applied_cantus_firmus(APPLIED_CANTUS_FIRMUS)
     synthesize_applied_cantus_firmus(APPLIED_CANTUS_FIRMUS)
