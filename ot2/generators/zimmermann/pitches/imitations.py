@@ -77,7 +77,12 @@ def imitate(
     harmony_with_one_octave_lower = tuple(
         pitch + pitches.JustIntonationPitch("1/2") for pitch in harmony
     )
-    available_pitches = harmony_with_one_octave_lower + harmony
+    harmony_with_one_octave_higher = tuple(
+        pitch + pitches.JustIntonationPitch("2/1") for pitch in harmony
+    )
+    available_pitches = (
+        harmony_with_one_octave_lower + harmony + harmony_with_one_octave_higher
+    )
 
     cents_to_pitch = {
         int(pitch.cents * cent_factor): pitch for pitch in available_pitches

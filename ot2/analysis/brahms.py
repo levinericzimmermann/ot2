@@ -29,6 +29,11 @@ def load_melody(path: str) -> basic.SequentialEvent[music.NoteLike]:
                 mutwo_event = music.NoteLike(mutwo_pitches, event_duration)
                 mutwo_melody.append(mutwo_event)
 
+    # remove rests
+    mutwo_melody.tie_by(
+        lambda _, event_to_delete: not bool(event_to_delete.pitch_or_pitches),
+        process_surviving_event=lambda _, __: _,
+    )
     return mutwo_melody
 
 
