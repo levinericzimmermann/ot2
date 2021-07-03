@@ -1,4 +1,3 @@
-import fractions
 import typing
 
 import abjad  # type: ignore
@@ -19,20 +18,23 @@ class ColotomicPitchToMutwoPitchConverter(mutwo_abjad.MutwoPitchToAbjadPitchConv
     def convert(
         self, mutwo_pitch: mutwo_parameters.pitches.WesternPitch
     ) -> abjad.NamedPitch:
-        mutwo_pitch = {
-            "g": mutwo_parameters.pitches.WesternPitch("g", octave=3),
-            "b": mutwo_parameters.pitches.WesternPitch("b", octave=3),
-            "d": mutwo_parameters.pitches.WesternPitch("d", octave=4),
-            "f": mutwo_parameters.pitches.WesternPitch("f", octave=4),
-        }[mutwo_pitch.pitch_class_name]
+        mutwo_pitch = instruments.PERCUSSION_EXPONENTS_TO_WRITTEN_PITCH[
+            mutwo_pitch.exponents
+        ]
         return super().convert(mutwo_pitch)
 
 
 class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
     search_tree = nauert.UnweightedSearchTree(
         definition={
-            2: {2: {2: {2: {2: {2: None,},},},},},
-            3: {2: {2: {2: {2: {2: None,},},},},},
+            2: {
+                2: {2: {2: {2: {2: None,},},}, 3: {2: {2: {2: {2: None,},},},}},
+                3: {2: {2: {2: {2: None,},},}, 3: {2: {2: {2: {2: None,},},},}},
+            },
+            3: {
+                2: {2: {2: {2: {2: None,},},}, 3: {2: {2: {2: {2: None,},},},}},
+                3: {2: {2: {2: {2: None,},},}, 3: {2: {2: {2: {2: None,},},},}},
+            },
         },
     )
 
@@ -53,6 +55,7 @@ class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
     def _prepare_percussion_sequential_event(
         sequential_event: basic.SequentialEvent[music.NoteLike],
     ) -> basic.SequentialEvent:
+        """
         absolute_times = sequential_event.absolute_times
         for start, event in zip(reversed(absolute_times), reversed(sequential_event)):
             if event.duration > fractions.Fraction(1, 4) and event.pitch_or_pitches:
@@ -60,6 +63,7 @@ class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
                     start + fractions.Fraction(1, 4),
                     music.NoteLike([], event.duration - fractions.Fraction(1, 4)),
                 )
+        """
         return sequential_event
 
     @staticmethod
@@ -145,7 +149,7 @@ class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
             mutwo_abjad.SequentialEventToDurationLineBasedQuantizedAbjadContainerConverter(
                 self._time_signatures,
                 tempo_envelope=self._tempo_envelope,
-                search_tree=self.search_tree,
+                # search_tree=self.search_tree,
             ),
             mutwo_pitch_to_abjad_pitch_converter=mutwo_abjad.MutwoPitchToHEJIAbjadPitchConverter(),
         )
@@ -201,7 +205,7 @@ class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
             simultaneous_event = tagged_simultaneous_event[instrument_id]
 
             staff = abjad.Staff([], simultaneous=True)
-            staff.remove_commands.append("Time_signature_engraver")
+            # staff.remove_commands.append("Time_signature_engraver")
             for sequential_event in simultaneous_event:
                 difference = duration - sequential_event.duration
                 if difference:
