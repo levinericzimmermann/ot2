@@ -1,4 +1,4 @@
-"""Apply Brahms melody whenever possible on applied cantus firmus."""
+"""Apply Brahms melodies whenever possible on applied cantus firmus."""
 
 import fractions
 import functools
@@ -182,8 +182,20 @@ def illustrate_applied_brahms_melodies(applied_brahms_melodies: basic.Sequential
     abjad.persist.as_pdf(lilypond_file, "builds/applied_brahms_melodies.pdf")
 
 
+def synthesize_applied_brahms(applied_brahms_melodies: basic.SequentialEvent):
+    applied_brahms_melodies = functools.reduce(operator.add, applied_brahms_melodies)
+    from mutwo.converters.frontends import midi
+
+    converter = midi.MidiFileConverter("builds/materials/applied_brahms.mid")
+    converter.convert(
+        applied_brahms_melodies.set_parameter(
+            "duration", lambda duration: duration * 4, mutate=False
+        )
+    )
+
 APPLIED_BRAHMS_MELODIES_PATH = "ot2/analysis/data/applied_brahms_melodies.pickle"
 APPLIED_BRAHMS_MELODIES = _import_applied_brahms_melodies()
+synthesize_applied_brahms(APPLIED_BRAHMS_MELODIES)
 
 if __name__ == "__main__":
     APPLIED_BRAHMS_MELODIES = _apply_brahms_melodies_if_possible(
