@@ -76,3 +76,11 @@ INSTRUMENT_TO_N_VOICES = {
     ID_SUS1: 1,
     ID_SUS2: 1,
 }
+
+
+PERCUSSION_EXPONENTS_TO_WRITTEN_PITCH = {
+    tuple([]): pitches.WesternPitch("g", octave=3),
+    (-1, 1): pitches.WesternPitch("b", octave=3),
+    (-2, 0, 1): pitches.WesternPitch("d", octave=4),
+    (-2, 0, 0, 1): pitches.WesternPitch("f", octave=4),
+}

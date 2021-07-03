@@ -1,5 +1,7 @@
 import expenvelope
 
+from ot2.constants import instruments
+
 from mutwo.converters.frontends import midi
 from mutwo.converters import symmetrical
 from mutwo.events import abc
@@ -44,4 +46,16 @@ class PercussiveEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
     def __init__(self):
         super().__init__(
             path="builds/percussive.mid", midi_file_type=1,  # polyphon instruments
+        )
+
+    def convert(self, event_to_convert: abc.Event):
+        return super().convert(
+            event_to_convert.set_parameter(
+                "pitch_or_pitches",
+                lambda pitch_or_pitches: [
+                    instruments.PERCUSSION_EXPONENTS_TO_WRITTEN_PITCH[pitch.exponents]
+                    for pitch in pitch_or_pitches
+                ],
+                mutate=False,
+            )
         )
