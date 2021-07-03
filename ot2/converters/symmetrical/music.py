@@ -118,7 +118,7 @@ class SimpleDingDongMelodyConverter(BarsWithHarmonyToMusicConverter):
             )
             for goal in sorted_potential_goals
         )
-        filtered_potential_goals = zimmermann.filter_untunable_pitches(
+        filtered_potential_goals = zimmermann.pitches.generic.filter_untunable_pitches(
             potential_goals,
             sorted_potential_goals,
             intervals_between_goals_and_simultaenous_pitches,
@@ -129,7 +129,7 @@ class SimpleDingDongMelodyConverter(BarsWithHarmonyToMusicConverter):
         else:
             pitches_to_sort = potential_goals
 
-        sorted_potential_goals = zimmermann.sort_pitches_by_harmonicity(
+        sorted_potential_goals = zimmermann.pitches.generic.sort_pitches_by_harmonicity(
             pitches_to_sort,
             sorted_potential_goals,
             intervals_between_goals_and_simultaenous_pitches,
@@ -151,7 +151,7 @@ class SimpleDingDongMelodyConverter(BarsWithHarmonyToMusicConverter):
         )
         choosen_pitches = [goal]
         for simultaneous_pitches in reversed(simultaneous_pitches_for_each_pitch[:-1]):
-            choosen_pitch = zimmermann.find_next_melodic_pitch(
+            choosen_pitch = zimmermann.pitches.generic.find_next_melodic_pitch(
                 choosen_pitches[-1],
                 available_pitches,
                 not direction,
