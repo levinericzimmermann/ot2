@@ -15,6 +15,7 @@ from mutwo.events import music
 from mutwo.parameters import pitches
 
 from ot2.analysis import applied_cantus_firmus_constants
+from ot2.analysis import cantus_firmus_constants
 from ot2.analysis import cantus_firmus
 
 
@@ -22,7 +23,7 @@ def _load_transitional_harmonies() -> typing.Dict[
     typing.Tuple[typing.Tuple[int, ...], typing.Tuple[int, ...]],
     typing.Tuple[pitches.JustIntonationPitch, ...],
 ]:
-    with open("ot2/analysis/data/transition_harmonies.json", "r") as f:
+    with open("ot2/analysis/data/transition_harmonies6.json", "r") as f:
         transitional_harmonies_raw = json.load(f)
 
     transitional_harmonies = {}
@@ -33,20 +34,17 @@ def _load_transitional_harmonies() -> typing.Dict[
         solution,
         _,
     ) in transitional_harmonies_raw:
-        current_pitch_as_pitch = pitches.JustIntonationPitch(current_pitch)
-        previous_pitch_as_pitch = pitches.JustIntonationPitch(previous_pitch)
-        next_pitch_as_pitch = pitches.JustIntonationPitch(next_pitch)
-        interval0 = (previous_pitch_as_pitch - current_pitch_as_pitch).normalize(
-            mutate=False
-        )
-        interval1 = (next_pitch_as_pitch - current_pitch_as_pitch).normalize(
-            mutate=False
-        )
         solution_as_pitches = tuple(
             pitches.JustIntonationPitch(pitch) for pitch in solution
         )
         transitional_harmonies.update(
-            {(interval0.exponents, interval1.exponents): solution_as_pitches}
+            {
+                (
+                    tuple(current_pitch),
+                    tuple(previous_pitch),
+                    tuple(next_pitch),
+                ): solution_as_pitches
+            }
         )
     return transitional_harmonies
 
@@ -79,12 +77,19 @@ def make_applied_cantus_firmus(
     cantus_firmus = _process_cantus_firmus(cantus_firmus)
     previous_pitch_or_pitches = None
     applied_cantus_firmus = basic.SequentialEvent([])
+    roots = (
+        cantus_firmus_constants.START_PITCH_TO_ROOT[start_pitch]
+        for start_pitch in "c e a c e a d g c e a".split(" ")
+    )
+    current_root = None
     for pitch_or_pitches, next_pitch_or_pitches, duration in zip(
         cantus_firmus.get_parameter("pitch_or_pitches"),
         cantus_firmus.get_parameter("pitch_or_pitches")[1:] + (None,),
         cantus_firmus.get_parameter("duration"),
     ):
         if pitch_or_pitches:
+            if current_root is None:
+                current_root = next(roots)
             current_pitch = pitch_or_pitches[0]
             previous_pitch = (
                 previous_pitch_or_pitches[0]
@@ -94,18 +99,20 @@ def make_applied_cantus_firmus(
             next_pitch = (
                 next_pitch_or_pitches[0] if next_pitch_or_pitches else current_pitch
             )
-            interval0 = (
-                (previous_pitch - current_pitch).normalize(mutate=False).exponents
-            )
-            interval1 = (next_pitch - current_pitch).normalize(mutate=False).exponents
             harmony = [
                 current_pitch + pitch
-                for pitch in transitional_harmonies[interval0, interval1]
+                for pitch in transitional_harmonies[
+                    tuple(
+                        (pitch - current_root).normalize(mutate=False).exponents
+                        for pitch in (current_pitch, previous_pitch, next_pitch)
+                    )
+                ]
             ]
             event = music.NoteLike(harmony, duration)
 
         else:
             event = music.NoteLike([], duration)
+            current_root = None
 
         applied_cantus_firmus.append(event)
         previous_pitch_or_pitches = pitch_or_pitches
@@ -138,7 +145,7 @@ def illustrate_applied_cantus_firmus(cantus_firmus: basic.SequentialEvent):
     lilypond_file = abjad.LilyPondFile(
         items=[abjad_score], includes=["ekme-heji-ref-c.ily"]
     )
-    abjad.persist.as_pdf(lilypond_file, "builds/applied_cantus_firmus.pdf")
+    abjad.persist.as_pdf(lilypond_file, "builds/materials/applied_cantus_firmus.pdf")
 
 
 def synthesize_applied_cantus_firmus(cantus_firmus: basic.SequentialEvent):
@@ -146,7 +153,10 @@ def synthesize_applied_cantus_firmus(cantus_firmus: basic.SequentialEvent):
 
     drone = basic.SequentialEvent(
         [
-            music.NoteLike(note.pitch_or_pitches[0] - pitches.JustIntonationPitch('2/1'), note.duration)
+            music.NoteLike(
+                note.pitch_or_pitches[0] - pitches.JustIntonationPitch("2/1"),
+                note.duration,
+            )
             if note.pitch_or_pitches
             else note
             for note in cantus_firmus
@@ -155,25 +165,30 @@ def synthesize_applied_cantus_firmus(cantus_firmus: basic.SequentialEvent):
     melody = basic.SequentialEvent([])
     for note in cantus_firmus:
         if note.pitch_or_pitches:
-            pitches_cycle = itertools.cycle(note.pitch_or_pitches[1:])
+            pitches_cycle = itertools.cycle(sorted(note.pitch_or_pitches))
             [
-                melody.append(music.NoteLike(next(pitches_cycle), 0.25))
-                for _ in range(int(note.duration * 4))
+                melody.append(
+                    music.NoteLike(next(pitches_cycle), fractions.Fraction(1, 6))
+                )
+                for _ in range(int(note.duration * 6))
             ]
         else:
             melody.append(copy.copy(note))
 
     for name, sequential_event in (("drone", drone), ("melody", melody)):
         converter = midi.MidiFileConverter(
-            "builds/applied_cantus_firmus_{}.mid".format(name)
+            "builds/materials/applied_cantus_firmus_{}.mid".format(name)
         )
-        converter.convert(sequential_event.set_parameter('duration', lambda duration: duration * 4, mutate=False))
+        converter.convert(
+            sequential_event.set_parameter(
+                "duration", lambda duration: duration * 4, mutate=False
+            )
+        )
 
 
 APPLIED_CANTUS_FIRMUS = make_applied_cantus_firmus(
     cantus_firmus=cantus_firmus.CANTUS_FIRMUS
 )
-
 
 if __name__ == "__main__":
     illustrate_applied_cantus_firmus(APPLIED_CANTUS_FIRMUS)
