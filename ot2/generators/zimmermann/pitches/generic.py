@@ -6,9 +6,8 @@ import operator
 import typing
 import warnings
 
+from mutwo.generators import sabat_constants
 from mutwo.parameters import pitches
-
-from ot2.generators import sabat_constants
 
 
 def filter_untunable_pitches(
