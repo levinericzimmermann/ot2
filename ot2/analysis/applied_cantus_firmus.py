@@ -108,6 +108,9 @@ def make_applied_cantus_firmus(
                     )
                 ]
             ]
+
+            # MAKE EVERYTHING MORE READABLE (go down to pitch 'e')
+            harmony = [pitch - pitches.JustIntonationPitch('3/2') for pitch in harmony]
             event = music.NoteLike(harmony, duration)
 
         else:

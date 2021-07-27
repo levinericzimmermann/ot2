@@ -1,31 +1,190 @@
 import typing
 
 import abjad  # type: ignore
-from abjadext import nauert
+from abjadext import nauert  # type: ignore
 import expenvelope  # type: ignore
 
 from mutwo.converters import abc as converters_abc
 from mutwo.converters.frontends import abjad as mutwo_abjad
-from mutwo.events import basic
-from mutwo.events import music
-from mutwo import parameters as mutwo_parameters
+from mutwo.converters.frontends import abjad_process_container_routines
+from mutwo.parameters import tempos
 
 from ot2.constants import instruments
-from ot2.events import basic as ot2_basic
+from ot2.converters.frontends import abjad_constants as ot2_abjad_constants
+from ot2.converters.frontends import (
+    abjad_process_container_routines as ot2_abjad_process_container_routines,
+)
 
 
-class ColotomicPitchToMutwoPitchConverter(mutwo_abjad.MutwoPitchToAbjadPitchConverter):
-    def convert(
-        self, mutwo_pitch: mutwo_parameters.pitches.WesternPitch
-    ) -> abjad.NamedPitch:
-        mutwo_pitch = instruments.PERCUSSION_EXPONENTS_TO_WRITTEN_PITCH[
-            mutwo_pitch.exponents
-        ]
-        return super().convert(mutwo_pitch)
+class TimeBracketToAbjadScoreConverter(
+    mutwo_abjad.NestedComplexEventToAbjadContainerConverter
+):
+    def __init__(
+        self,
+        nested_complex_event_to_complex_event_to_abjad_container_converters_converter: mutwo_abjad.NestedComplexEventToComplexEventToAbjadContainerConvertersConverter,
+        complex_event_to_abjad_container_name=lambda complex_event: complex_event.tag,
+        post_process_abjad_container_routines: typing.Sequence = tuple([]),
+    ):
+        post_process_abjad_container_routines = tuple(
+            post_process_abjad_container_routines
+        ) + (abjad_process_container_routines.AddTimeBracketMarks(),)
+        super().__init__(
+            nested_complex_event_to_complex_event_to_abjad_container_converters_converter,
+            abjad.Score,
+            "Score",
+            complex_event_to_abjad_container_name,
+            [],
+            post_process_abjad_container_routines,
+        )
 
 
-class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
-    search_tree = nauert.UnweightedSearchTree(
+# ######################################################## #
+#                      OTHER                               #
+# ######################################################## #
+
+
+class MutwoPitchToDiatonicAbjadPitchConverter(
+    mutwo_abjad.MutwoPitchToAbjadPitchConverter
+):
+    def convert(self, pitch_to_convert):
+        abjad_pitch = super().convert(pitch_to_convert)
+        return abjad.NamedPitch(round(abjad_pitch.number))
+
+
+# ######################################################## #
+#     IslandSimultaneousEventToAbjadStaffGroupConverter    #
+# ######################################################## #
+
+
+class IslandSimultaneousEventToAbjadStaffGroupConverter(
+    mutwo_abjad.NestedComplexEventToAbjadContainerConverter
+):
+    def __init__(
+        self,
+        post_process_abjad_container_routines: typing.Sequence = [],
+        lilypond_type_of_abjad_container: str = "StaffGroup",
+        mutwo_pitch_to_abjad_pitch_converter=mutwo_abjad.MutwoPitchToHEJIAbjadPitchConverter(),
+    ):
+        sequential_event_to_abjad_voice_converter = mutwo_abjad.SequentialEventToAbjadVoiceConverter(
+            mutwo_abjad.SequentialEventToDurationLineBasedQuantizedAbjadContainerConverter(),
+            mutwo_pitch_to_abjad_pitch_converter=mutwo_pitch_to_abjad_pitch_converter,
+            tempo_envelope_to_abjad_attachment_tempo_converter=None,
+            write_multimeasure_rests=False,
+        )
+        super().__init__(
+            mutwo_abjad.CycleBasedNestedComplexEventToComplexEventToAbjadContainerConvertersConverter(
+                (sequential_event_to_abjad_voice_converter,)
+            ),
+            abjad.StaffGroup,
+            lilypond_type_of_abjad_container,
+            pre_process_abjad_container_routines=[],
+            post_process_abjad_container_routines=post_process_abjad_container_routines,
+        )
+
+
+class IslandKeyboardToAbjadStaffGroupConverter(
+    IslandSimultaneousEventToAbjadStaffGroupConverter,
+):
+    def __init__(self):
+        super().__init__(
+            post_process_abjad_container_routines=[
+                ot2_abjad_process_container_routines.KeyboardMixin()
+            ],
+            lilypond_type_of_abjad_container="PianoStaff",
+            mutwo_pitch_to_abjad_pitch_converter=MutwoPitchToDiatonicAbjadPitchConverter(),
+        )
+
+
+class IslandSustainingInstrumentToAbjadStaffGroupConverter(
+    IslandSimultaneousEventToAbjadStaffGroupConverter,
+):
+    def __init__(self, nth_sustaining_instrument: int = 0):
+        sustaining_instrument_mixin = ot2_abjad_process_container_routines.SustainingInstrumentMixin(
+            nth_sustaining_instrument
+        )
+        self._instrument_id = sustaining_instrument_mixin._instrument_id
+        super().__init__(
+            post_process_abjad_container_routines=[sustaining_instrument_mixin],
+        )
+
+
+class IslandDroneToAbjadStaffGroupConverter(
+    IslandSimultaneousEventToAbjadStaffGroupConverter,
+):
+    def __init__(self):
+        super().__init__(
+            post_process_abjad_container_routines=[
+                ot2_abjad_process_container_routines.DroneMixin()
+            ],
+        )
+
+
+# ######################################################## #
+#         IslandTimeBracketToAbjadScoreConverter           #
+# ######################################################## #
+
+
+class IslandTimeBracketToAbjadScoreConverter(TimeBracketToAbjadScoreConverter):
+    _nth_island_counter = 0
+
+    def __init__(
+        self,
+        nested_complex_event_to_complex_event_to_abjad_container_converters_converter: mutwo_abjad.NestedComplexEventToComplexEventToAbjadContainerConvertersConverter,
+        post_process_abjad_container_routines: typing.Sequence = tuple([]),
+    ):
+        def get_score_name(_):
+            score_name = f"islandScore{self._nth_island_counter}"
+            self._nth_island_counter += 1
+            return score_name
+
+        post_process_abjad_container_routines = tuple(
+            post_process_abjad_container_routines
+        ) + (ot2_abjad_process_container_routines.PostProcessIslandTimeBracket(),)
+
+        super().__init__(
+            nested_complex_event_to_complex_event_to_abjad_container_converters_converter,
+            get_score_name,
+            post_process_abjad_container_routines,
+        )
+
+
+class IslandKeyboardToAbjadScoreConverter(IslandTimeBracketToAbjadScoreConverter):
+    def __init__(self):
+        super().__init__(
+            mutwo_abjad.TagBasedNestedComplexEventToComplexEventToAbjadContainerConvertersConverter(
+                {instruments.ID_KEYBOARD: IslandKeyboardToAbjadStaffGroupConverter()}
+            )
+        )
+
+
+class IslandSustainingInstrumentToAbjadScoreConverter(
+    IslandTimeBracketToAbjadScoreConverter
+):
+    def __init__(self, nth_sustaining_instrument: int):
+        island_sustaining_instrument_to_abjad_staff_group_converter = IslandSustainingInstrumentToAbjadStaffGroupConverter(
+            nth_sustaining_instrument
+        )
+        drone_to_abjad_staff_group_converter = IslandDroneToAbjadStaffGroupConverter()
+        super().__init__(
+            mutwo_abjad.TagBasedNestedComplexEventToComplexEventToAbjadContainerConvertersConverter(
+                {
+                    island_sustaining_instrument_to_abjad_staff_group_converter._instrument_id: island_sustaining_instrument_to_abjad_staff_group_converter,
+                    instruments.ID_DRONE: drone_to_abjad_staff_group_converter,
+                }
+            )
+        )
+
+
+# ######################################################## #
+#   CengkokSimultaneousEventToAbjadStaffGroupConverter     #
+# ######################################################## #
+
+
+class CengkokSimultaneousEventToAbjadStaffGroupConverter(
+    mutwo_abjad.NestedComplexEventToAbjadContainerConverter
+):
+
+    _search_tree = nauert.UnweightedSearchTree(
         definition={
             2: {
                 2: {2: {2: {2: {2: None,},},}, 3: {2: {2: {2: {2: None,},},},}},
@@ -40,223 +199,145 @@ class TaggedSimultaneousEventToAbjadScoreConverter(converters_abc.Converter):
 
     def __init__(
         self,
-        time_signatures: typing.Sequence[abjad.TimeSignature] = (
-            abjad.TimeSignature((4, 4)),
-        ),
-        tempo_envelope: expenvelope.Envelope = None,
+        time_signatures: typing.Sequence[abjad.TimeSignature],
+        tempo_point: tempos.TempoPoint,
+        post_process_abjad_container_routines: typing.Sequence = [],
+        lilypond_type_of_abjad_container: str = "StaffGroup",
+        mutwo_pitch_to_abjad_pitch_converter=mutwo_abjad.MutwoPitchToHEJIAbjadPitchConverter(),
     ):
-        self._time_signatures = time_signatures
-        self._tempo_envelope = tempo_envelope
-        self._instrument_id_to_sequential_event_to_abjad_voice_converter = (
-            self._make_instrument_id_to_sequential_event_to_abjad_voice_converter()
+        post_process_abjad_container_routines = tuple(
+            post_process_abjad_container_routines
+        ) + (
+            ot2_abjad_process_container_routines.PostProcessCengkokSimultaneousEvent(),
         )
-
-    @staticmethod
-    def _prepare_percussion_sequential_event(
-        sequential_event: basic.SequentialEvent[music.NoteLike],
-    ) -> basic.SequentialEvent:
-        """
-        absolute_times = sequential_event.absolute_times
-        for start, event in zip(reversed(absolute_times), reversed(sequential_event)):
-            if event.duration > fractions.Fraction(1, 4) and event.pitch_or_pitches:
-                sequential_event.squash_in(
-                    start + fractions.Fraction(1, 4),
-                    music.NoteLike([], event.duration - fractions.Fraction(1, 4)),
-                )
-        """
-        return sequential_event
-
-    @staticmethod
-    def _prepare_voice(voice: abjad.Voice, instrument_id: str):
-        """Preparation that applies to all voices"""
-
-        first_leaf = abjad.get.leaf(voice, 0)
-
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                "\\set Staff.instrumentName = \\markup {  \\teeny {"
-                + instruments.INSTRUMENT_ID_TO_LONG_INSTRUMENT_NAME[instrument_id]
-                + " } }"
-            ),
-            first_leaf,
+        tempo_envelope = expenvelope.Envelope.from_points(
+            (0, tempo_point), (10, tempo_point)
         )
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                "\\set Staff.shortInstrumentName = \\markup {  \\teeny { "
-                + instruments.INSTRUMENT_ID_TO_SHORT_INSTRUMENT_NAME[instrument_id]
-                + " } }"
-            ),
-            first_leaf,
-        )
-
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                "\\override Staff.TimeSignature.style = #'single-digit"
-            ),
-            first_leaf,
-        )
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                "\\set Score.proportionalNotationDuration = #(ly:make-moment 1/8)"
-            ),
-            first_leaf,
-        )
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                "\\override Score.SpacingSpanner.strict-note-spacing = ##t"
-            ),
-            first_leaf,
-        )
-        abjad.attach(abjad.LilyPondLiteral("\\hide Staff.BarLine"), first_leaf)
-
-        last_leaf = abjad.get.leaf(voice, -1)
-        abjad.attach(abjad.BarLine("|.", format_slot="absolute_after"), last_leaf)
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                r"\undo \hide Staff.BarLine", format_slot="absolute_after"
-            ),
-            last_leaf,
-        )
-
-    @staticmethod
-    def _prepare_duration_line_voice(voice: abjad.Voice):
-        """Preparation that applies to voices with duration line notation"""
-
-        first_leaf = abjad.get.leaf(voice, 0)
-        abjad.attach(
-            abjad.LilyPondLiteral('\\accidentalStyle "dodecaphonic"'), first_leaf
-        )
-        voice.consists_commands.append("Duration_line_engraver")
-
-    @staticmethod
-    def _prepare_drone_voice(voice: abjad.Voice):
-        """Preparation that applies to drone"""
-
-        first_leaf = abjad.get.leaf(voice, 0)
-        abjad.attach(abjad.Clef("bass"), first_leaf)
-
-    @staticmethod
-    def _prepare_percussion_voice(voice: abjad.Voice):
-        """Preparation that applies to drone"""
-
-        first_leaf = abjad.get.leaf(voice, 0)
-        abjad.attach(abjad.Clef("percussion"), first_leaf)
-
-    def _make_sequential_event_to_abjad_voice_converter_for_sustaining_instrument(
-        self,
-    ) -> mutwo_abjad.SequentialEventToAbjadVoiceConverter:
-        return mutwo_abjad.SequentialEventToAbjadVoiceConverter(
-            mutwo_abjad.SequentialEventToDurationLineBasedQuantizedAbjadContainerConverter(
-                self._time_signatures,
-                tempo_envelope=self._tempo_envelope,
-                # search_tree=self.search_tree,
-            ),
-            mutwo_pitch_to_abjad_pitch_converter=mutwo_abjad.MutwoPitchToHEJIAbjadPitchConverter(),
-        )
-
-    def _make_sequential_event_to_abjad_voice_converter_for_percussion_instrument(
-        self,
-    ) -> mutwo_abjad.SequentialEventToAbjadVoiceConverter:
-        return mutwo_abjad.SequentialEventToAbjadVoiceConverter(
+        sequential_event_to_abjad_voice_converter = mutwo_abjad.SequentialEventToAbjadVoiceConverter(
             mutwo_abjad.SequentialEventToQuantizedAbjadContainerConverter(
-                self._time_signatures,
-                tempo_envelope=self._tempo_envelope,
-                search_tree=self.search_tree,
+                time_signatures=time_signatures,
+                tempo_envelope=tempo_envelope,
+                search_tree=self._search_tree,
             ),
-            mutwo_pitch_to_abjad_pitch_converter=ColotomicPitchToMutwoPitchConverter(),
+            mutwo_pitch_to_abjad_pitch_converter=mutwo_pitch_to_abjad_pitch_converter,
+        )
+        super().__init__(
+            mutwo_abjad.CycleBasedNestedComplexEventToComplexEventToAbjadContainerConvertersConverter(
+                (sequential_event_to_abjad_voice_converter,)
+            ),
+            abjad.StaffGroup,
+            lilypond_type_of_abjad_container,
+            pre_process_abjad_container_routines=[],
+            post_process_abjad_container_routines=post_process_abjad_container_routines,
         )
 
-    def _make_instrument_id_to_sequential_event_to_abjad_voice_converter(
+
+class CengkokKeyboardToAbjadStaffGroupConverter(
+    CengkokSimultaneousEventToAbjadStaffGroupConverter,
+):
+    def __init__(
         self,
-    ) -> typing.Dict[str, mutwo_abjad.SequentialEventToAbjadVoiceConverter]:
-        sequential_event_to_abjad_voice_converter_for_sustaining_instrument = (
-            self._make_sequential_event_to_abjad_voice_converter_for_sustaining_instrument()
-        )
-        sequential_event_to_abjad_voice_converter_for_percussion_instrument = (
-            self._make_sequential_event_to_abjad_voice_converter_for_percussion_instrument()
+        time_signatures: typing.Sequence[abjad.TimeSignature],
+        tempo_point: tempos.TempoPoint,
+    ):
+        super().__init__(
+            time_signatures,
+            tempo_point,
+            post_process_abjad_container_routines=[
+                ot2_abjad_process_container_routines.KeyboardMixin()
+            ],
+            lilypond_type_of_abjad_container="PianoStaff",
         )
 
-        return {
-            instruments.ID_SUS0: sequential_event_to_abjad_voice_converter_for_sustaining_instrument,
-            instruments.ID_SUS1: sequential_event_to_abjad_voice_converter_for_sustaining_instrument,
-            instruments.ID_SUS2: sequential_event_to_abjad_voice_converter_for_sustaining_instrument,
-            instruments.ID_DRONE: sequential_event_to_abjad_voice_converter_for_sustaining_instrument,
-            instruments.ID_PERCUSSIVE: sequential_event_to_abjad_voice_converter_for_percussion_instrument,
-            instruments.ID_NOISE: sequential_event_to_abjad_voice_converter_for_percussion_instrument,
-        }
 
-    def convert(
+class CengkokSustainingInstrumentToAbjadStaffGroupConverter(
+    CengkokSimultaneousEventToAbjadStaffGroupConverter,
+):
+    def __init__(
         self,
-        tagged_simultaneous_event: ot2_basic.TaggedSimultaneousEvent[
-            basic.SimultaneousEvent[basic.SequentialEvent[music.NoteLike]]
-        ],
-    ) -> abjad.Score:
-        staff_group = abjad.StaffGroup([])
+        nth_sustaining_instrument,
+        time_signatures: typing.Sequence[abjad.TimeSignature],
+        tempo_point: tempos.TempoPoint,
+    ):
+        super().__init__(
+            time_signatures,
+            tempo_point,
+            post_process_abjad_container_routines=[
+                ot2_abjad_process_container_routines.SustainingInstrumentMixin(
+                    nth_sustaining_instrument
+                )
+            ],
+        )
 
-        duration = tagged_simultaneous_event.duration
 
-        for instrument_id in sorted(
-            tagged_simultaneous_event.tag_to_event_index.keys(),
-            key=lambda tag: tagged_simultaneous_event.tag_to_event_index[tag],
+# ######################################################## #
+#        CengkokTimeBracketToAbjadScoreConverter           #
+# ######################################################## #
+
+
+class CengkokTimeBracketToAbjadScoreConverter(TimeBracketToAbjadScoreConverter):
+    nth_score_counter = 0
+
+    def __init__(
+        self,
+        time_signatures: typing.Sequence[abjad.TimeSignature],
+        tempo_point: tempos.TempoPoint,
+        post_process_abjad_container_routines: typing.Sequence = [],
+    ):
+        def get_score_name(_):
+            score_name = f"cengkokScore{self._nth_score_counter}"
+            self._nth_score_counter += 1
+            return score_name
+
+        tag_to_converter = {}
+        for converter_class, instrument_id, convert_class_arguments in (
+            (
+                CengkokSustainingInstrumentToAbjadStaffGroupConverter,
+                instruments.ID_SUS0,
+                [0],
+            ),
+            (
+                CengkokSustainingInstrumentToAbjadStaffGroupConverter,
+                instruments.ID_SUS1,
+                [1],
+            ),
+            (
+                CengkokSustainingInstrumentToAbjadStaffGroupConverter,
+                instruments.ID_SUS2,
+                [2],
+            ),
+            (CengkokKeyboardToAbjadStaffGroupConverter, instruments.ID_KEYBOARD, []),
         ):
-            converter = self._instrument_id_to_sequential_event_to_abjad_voice_converter[
-                instrument_id
-            ]
-            simultaneous_event = tagged_simultaneous_event[instrument_id]
+            converter_instance = converter_class(
+                *convert_class_arguments,
+                time_signatures=time_signatures,
+                tempo_point=tempo_point,
+            )
+            tag = instrument_id
+            tag_to_converter.update({tag: converter_instance})
 
-            staff = abjad.Staff([], simultaneous=True)
-            # staff.remove_commands.append("Time_signature_engraver")
-            for sequential_event in simultaneous_event:
-                difference = duration - sequential_event.duration
-                if difference:
-                    sequential_event.append(music.NoteLike([], difference))
-
-                if instrument_id == instruments.ID_PERCUSSIVE:
-                    sequential_event = self._prepare_percussion_sequential_event(
-                        sequential_event
-                    )
-
-                abjad_voice = converter.convert(sequential_event)
-
-                if instrument_id not in (
-                    instruments.ID_PERCUSSIVE,
-                    instruments.ID_NOISE,
-                ):
-                    self._prepare_duration_line_voice(abjad_voice)
-
-                if instrument_id == instruments.ID_PERCUSSIVE:
-                    self._prepare_percussion_voice(abjad_voice)
-                elif instrument_id == instruments.ID_DRONE:
-                    self._prepare_drone_voice(abjad_voice)
-                elif instrument_id == instruments.ID_NOISE:
-                    self._prepare_percussion_voice(abjad_voice)
-
-                self._prepare_voice(abjad_voice, instrument_id)
-                staff.append(abjad_voice)
-
-            staff_group.append(staff)
-
-        abjad_score = abjad.Score([staff_group])
-        return abjad_score
+        post_process_abjad_container_routines = tuple(
+            post_process_abjad_container_routines
+        ) + (ot2_abjad_process_container_routines.PostProcessCengkokTimeBracket(),)
+        super().__init__(
+            mutwo_abjad.TagBasedNestedComplexEventToComplexEventToAbjadContainerConvertersConverter(
+                tag_to_converter
+            ),
+            post_process_abjad_container_routines=post_process_abjad_container_routines,
+            complex_event_to_abjad_container_name=get_score_name,
+        )
 
 
-class PaperFormat(object):
-    def __init__(self, name: str, height: float, width: float):
-        self.name = name
-        self.height = height
-        self.width = width
+# ######################################################## #
+#            AbjadScoresToLilypondFileConverter            #
+# ######################################################## #
 
 
-A4 = PaperFormat("a4", 210, 297)
-A3 = PaperFormat("a3", 297, 420)
-A2 = PaperFormat("a2", 420, 594)
-
-
-class AbjadScoreToLilypondFileConverter(converters_abc.Converter):
+class AbjadScoresToLilypondFileConverter(converters_abc.Converter):
     def __init__(
         self,
         instrument: typing.Optional[str] = None,
-        paper_format: PaperFormat = A4,
+        paper_format: ot2_abjad_constants.PaperFormat = ot2_abjad_constants.A4,
         margin: float = 4,
     ):
         self._instrument = instrument
@@ -289,6 +370,13 @@ class AbjadScoreToLilypondFileConverter(converters_abc.Converter):
                           "Luxi Mono"
                           (/ staff-height pt 20)))"""
         )
+        paper_block.items.append(
+            r"""score-system-spacing =
+      #'((basic-distance . 30)
+       (minimum-distance . 18)
+       (padding . 1)
+       (stretchability . 12))"""
+        )
         return paper_block
 
     @staticmethod
@@ -296,139 +384,32 @@ class AbjadScoreToLilypondFileConverter(converters_abc.Converter):
         layout_block = abjad.Block("layout")
         layout_block.items.append(r"short-indent = {}\mm".format(margin))
         layout_block.items.append(r"ragged-last = ##f")
-        layout_block.items.append(r"indent = 23\mm".format(margin))
-        layout_block.items.append(
-            r"\override StaffGroup.BarLine.hair-thickness = 0.0001"
-        )
+        # layout_block.items.append(r"indent = 23\mm")
+        layout_block.items.append(r"indent = {}\mm".format(margin))
+        # layout_block.items.append(
+        #     r"\override StaffGroup.BarLine.hair-thickness = 0.0001"
+        # )
         return layout_block
 
-    def convert(self, abjad_score: abjad.Score) -> abjad.LilyPondFile:
+    def convert(self, abjad_scores: typing.Sequence[abjad.Score]) -> abjad.LilyPondFile:
         lilypond_file = abjad.LilyPondFile(
             includes=["ekme-heji-ref-c.ily"], default_paper_size=self._paper_format.name
         )
 
-        if self._instrument:
-            self._stress_instrument(abjad_score)
+        for abjad_score in abjad_scores:
+            lilypond_file.items.append(abjad_score)
+            # score_block = abjad.Block("score")
+            # score_block.items.append(abjad_score)
 
-        score_block = abjad.Block("score")
-        score_block.items.append(abjad_score)
-
-        lilypond_file.items.append(score_block)
+        # lilypond_file.items.append(score_block)
         lilypond_file.items.append(
-            AbjadScoreToLilypondFileConverter._make_header_block(self._instrument)
+            AbjadScoresToLilypondFileConverter._make_header_block(self._instrument)
         )
         lilypond_file.items.append(
-            AbjadScoreToLilypondFileConverter._make_layout_block(self._margin)
+            AbjadScoresToLilypondFileConverter._make_layout_block(self._margin)
         )
         lilypond_file.items.append(
-            AbjadScoreToLilypondFileConverter._make_paper_block()
+            AbjadScoresToLilypondFileConverter._make_paper_block()
         )
 
         return lilypond_file
-
-
-"""
-class ColotomicPatternToAbjadScoreConverter(converters_abc.Converter):
-    @staticmethod
-    def _prepare_abjad_voice(
-        abjad_voice: abjad.Voice,
-        colotomic_pattern_to_convert: colotomic_brackets.ColotomicPattern,
-    ) -> None:
-        abjad.attach(abjad.Clef("percussion"), abjad_voice[0][0])
-
-        # add repeat and n repetitions
-        abjad.attach(
-            abjad.Repeat(repeat_count=colotomic_pattern_to_convert.n_repetitions),
-            abjad_voice,
-        )
-        abjad.attach(
-            abjad.LilyPondLiteral(
-                "\\mark \\markup { \\smallCaps "
-                + '"{}x"'.format(colotomic_pattern_to_convert.n_repetitions)
-                + "}",
-                format_slot="after",
-            ),
-            abjad_voice[-1][-1],
-        )
-
-    @staticmethod
-    def _extract_sequential_event_from_colotomic_pattern(
-        colotomic_pattern: colotomic_brackets.ColotomicPattern,
-    ) -> basic.SequentialEvent[music.NoteLike]:
-        sequential_event = basic.SequentialEvent([])
-        for colotomic_element in colotomic_pattern:
-            sequential_event.extend(colotomic_element)
-        return sequential_event
-
-    def _make_sequential_event_to_abjad_voice_converter(
-        self, colotomic_pattern: colotomic_brackets.ColotomicPattern
-    ) -> mutwo_abjad.SequentialEventToAbjadVoiceConverter:
-        tempo_envelope = expenvelope.Envelope.from_levels_and_durations(
-            levels=[colotomic_pattern.tempo, colotomic_pattern.tempo], durations=[1]
-        )
-        sequential_event_to_quantized_abjad_container_converter = mutwo_abjad.SequentialEventToQuantizedAbjadContainerConverter(
-            time_signatures=(
-                colotomic_pattern.time_signature,
-                colotomic_pattern.time_signature,
-            ),
-            tempo_envelope=tempo_envelope,
-        )
-        sequential_event_to_abjad_voice_converter = mutwo_abjad.SequentialEventToAbjadVoiceConverter(
-            sequential_event_to_quantized_abjad_container_converter,
-            mutwo_pitch_to_abjad_pitch_converter=ColotomicPitchToMutwoPitchConverter(),
-        )
-        return sequential_event_to_abjad_voice_converter
-
-    def convert(
-        self, colotomic_pattern_to_convert: colotomic_brackets.ColotomicPattern
-    ) -> abjad.Score:
-        sequential_event = ColotomicPatternToAbjadScoreConverter._extract_sequential_event_from_colotomic_pattern(
-            colotomic_pattern_to_convert
-        )
-        converter = self._make_sequential_event_to_abjad_voice_converter(
-            colotomic_pattern_to_convert
-        )
-        abjad_voice = converter.convert(sequential_event)
-
-        ColotomicPatternToAbjadScoreConverter._prepare_abjad_voice(
-            abjad_voice, colotomic_pattern_to_convert
-        )
-
-        abjad_score = abjad.Score([abjad.Staff([abjad_voice])])
-        return abjad_score
-
-
-class ColotomicPatternsToLilypondFileConverter(converters_abc.Converter):
-    def __init__(self):
-        self._colotomic_pattern_to_abjad_score_converter = (
-            ColotomicPatternToAbjadScoreConverter()
-        )
-
-    def convert(
-        self, colotomic_patterns: typing.Sequence[colotomic_brackets.ColotomicPattern]
-    ) -> abjad.LilyPondFile:
-        # add margin markup (pattern number)
-        for nth_pattern, colotomic_pattern in enumerate(colotomic_patterns):
-            colotomic_pattern[0][0].notation_indicators.margin_markup.content = (
-                "{}".format(nth_pattern + 1)
-            )
-
-        abjad_scores = [
-            self._colotomic_pattern_to_abjad_score_converter.convert(colotomic_pattern)
-            for colotomic_pattern in colotomic_patterns
-        ]
-
-        lilypond_file = abjad.LilyPondFile()
-
-        header = abjad.Block("header")
-        header.title = '"ohne Titel (2)"'
-        header.instrument = '"percussive instrument(s)"'
-        header.composer = '"Levin Eric Zimmermann"'
-        # header.tagline = '"oT(2)"'
-        header.tagline = '""'
-        lilypond_file.items.append(header)
-
-        lilypond_file.items.extend(abjad_scores)
-
-        return lilypond_file
-"""

@@ -1,2 +1,4 @@
+from . import noises_constants
+
 from . import basic
-from . import bars
+from . import noises

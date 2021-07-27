@@ -22,14 +22,19 @@ ID_NOISE = "noise"
 ID_SUS0 = "sustaining0"
 ID_SUS1 = "sustaining1"
 ID_SUS2 = "sustaining2"
+ID_KEYBOARD = "keyboard"
+
+
+ID_SUS_TO_ID_SINE = {ID_SUS0: "sine0", ID_SUS1: "sine1", ID_SUS2: "sine2"}
 
 INSTRUMENT_ID_TO_LONG_INSTRUMENT_NAME = {
     ID_PERCUSSIVE: "percussive instrument(s)",
     ID_DRONE: "drone",
-    ID_SUS0: "sustaining instrument 1",
+    ID_SUS0: "sus. ins. 1",
     ID_SUS1: "sustaining instrument 2",
     ID_SUS2: "sustaining instrument 3",
     ID_NOISE: "noise",
+    ID_KEYBOARD: "keyboard",
 }
 
 INSTRUMENT_ID_TO_SHORT_INSTRUMENT_NAME = {
@@ -39,6 +44,7 @@ INSTRUMENT_ID_TO_SHORT_INSTRUMENT_NAME = {
     ID_SUS1: "s.i. 2",
     ID_SUS2: "s.i. 3",
     ID_NOISE: "n.",
+    ID_KEYBOARD: "k.b.",
 }
 
 INSTRUMENT_ID_TO_INDEX = {
@@ -67,6 +73,10 @@ AMBITUS_DRONE_INSTRUMENT = ambitus.Ambitus(
     pitches.JustIntonationPitch("1/4"), pitches.JustIntonationPitch("1/2")
 )
 
+AMBITUS_KEYBOARD = ambitus.Ambitus(
+    pitches.JustIntonationPitch("1/4"), pitches.JustIntonationPitch("4/1")
+)
+
 # how many voices (staves) one instrument owns
 INSTRUMENT_TO_N_VOICES = {
     ID_PERCUSSIVE: 1,
@@ -75,6 +85,7 @@ INSTRUMENT_TO_N_VOICES = {
     ID_SUS0: 1,
     ID_SUS1: 1,
     ID_SUS2: 1,
+    ID_KEYBOARD: 2,
 }
 
 

@@ -8,11 +8,14 @@ Furthermore assign duration in seconds to each event.
 """
 
 import copy
+import functools
+import operator
 import pickle
 import typing
 
 from mutwo.events import basic
 from mutwo.parameters import pitches
+from mutwo.parameters import volumes
 
 from ot2.analysis import phrases_constants
 from ot2.generators.zimmermann import pulse_transitions
@@ -185,11 +188,12 @@ def _export_splitted_parts(splitted_parts=typing.Tuple[Phrases, ...]):
 
 def _make_splitted_parts():
     from ot2.analysis import applied_cantus_firmus
+
     cantus_firmus = applied_cantus_firmus.APPLIED_CANTUS_FIRMUS
-    pulse_duration_for_each_event = _calculate_pulse_duration_for_each_event()
-    cantus_firmus = _apply_pulse_duration_on_cantus_firmus(
-        cantus_firmus, pulse_duration_for_each_event
-    )
+    # pulse_duration_for_each_event = _calculate_pulse_duration_for_each_event()
+    # cantus_firmus = _apply_pulse_duration_on_cantus_firmus(
+    #     cantus_firmus, pulse_duration_for_each_event
+    # )
     parts = _split_applied_cantus_firmus_in_parts(cantus_firmus)
     splitted_parts = tuple(_split_part_in_phrases(part) for part in parts)
     _export_splitted_parts(splitted_parts)
@@ -201,5 +205,29 @@ def _import_splitted_parts() -> typing.Tuple[Phrases, ...]:
     return splitted_parts
 
 
+def synthesize_splitted_parts(splitted_parts: typing.Tuple[Phrases, ...]):
+    from mutwo.converters.frontends import midi
+
+    melody = basic.SequentialEvent(
+        [basic.SequentialEvent(phrase) for phrase in splitted_parts]
+    )
+
+    melody = functools.reduce(operator.add, functools.reduce(operator.add, melody))
+
+    def simple_event_to_pitches(simple_event):
+        return [simple_event.root - pitches.JustIntonationPitch('2/1')]
+
+    converter = midi.MidiFileConverter(
+        "builds/materials/splitted_parts.mid",
+        simple_event_to_pitches=simple_event_to_pitches,
+        simple_event_to_volume=lambda _: volumes.DecibelVolume(-12),
+    )
+    converter.convert(
+        melody.set_parameter("duration", lambda duration: duration * 2, mutate=False)
+    )
+
+
 # _make_splitted_parts()
 SPLITTED_PARTS = _import_splitted_parts()
+
+synthesize_splitted_parts(SPLITTED_PARTS)

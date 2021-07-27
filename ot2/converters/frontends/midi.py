@@ -10,7 +10,8 @@ from mutwo.events import abc
 class OT2InstrumentEventToMidiFileConverter(midi.MidiFileConverter):
     _shall_apply_tempo_coverter = True
     _tempo_converter = symmetrical.tempos.TempoConverter(
-        expenvelope.Envelope.from_levels_and_durations(levels=[7.5, 7.5], durations=[1])
+        # expenvelope.Envelope.from_levels_and_durations(levels=[7.5, 7.5], durations=[1])
+        expenvelope.Envelope.from_levels_and_durations(levels=[30, 30], durations=[1])
     )
 
     def _apply_tempo_coverter(self, event_to_convert: abc.Event) -> abc.Event:
@@ -58,4 +59,20 @@ class PercussiveEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
                 ],
                 mutate=False,
             )
+        )
+
+
+class KeyboardEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
+    def __init__(self, nth_keyboard: int):
+        super().__init__(
+            path=f"builds/keyboard{nth_keyboard}.mid",
+            midi_file_type=1,  # polyphon instruments
+        )
+
+
+class CommonHarmonicEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
+    def __init__(self, name: str):
+        super().__init__(
+            path=f"builds/common_harmonics_{name}.mid",
+            midi_file_type=1,  # polyphon instruments
         )

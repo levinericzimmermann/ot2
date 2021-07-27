@@ -195,7 +195,6 @@ def synthesize_applied_brahms(applied_brahms_melodies: basic.SequentialEvent):
 
 APPLIED_BRAHMS_MELODIES_PATH = "ot2/analysis/data/applied_brahms_melodies.pickle"
 APPLIED_BRAHMS_MELODIES = _import_applied_brahms_melodies()
-synthesize_applied_brahms(APPLIED_BRAHMS_MELODIES)
 
 if __name__ == "__main__":
     APPLIED_BRAHMS_MELODIES = _apply_brahms_melodies_if_possible(
@@ -204,3 +203,4 @@ if __name__ == "__main__":
     # pickle applied brahms melody (speed up loading of melodies)
     _export_applied_brahms_melodies(APPLIED_BRAHMS_MELODIES)
     illustrate_applied_brahms_melodies(APPLIED_BRAHMS_MELODIES)
+    synthesize_applied_brahms(APPLIED_BRAHMS_MELODIES)

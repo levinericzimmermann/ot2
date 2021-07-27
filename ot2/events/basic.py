@@ -29,3 +29,13 @@ class TaggedSimultaneousEvent(basic.SimultaneousEvent, typing.Generic[T]):
             index_or_slice = self.tag_to_event_index[index_or_slice]
 
         return super().__getitem__(index_or_slice)
+
+
+class SequentialEventWithTempo(basic.SequentialEvent, typing.Generic[T]):
+    _class_specific_side_attributes = (
+        "tempo",
+    ) + basic.SequentialEvent._class_specific_side_attributes
+
+    def __init__(self, events: typing.Sequence[abc.Event], tempo: float):
+        super().__init__(events)
+        self.tempo = tempo

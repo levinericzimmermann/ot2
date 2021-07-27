@@ -103,3 +103,13 @@ class Ambitus(object):
             dummy_pitch.subtract(period)
 
         return tuple(sorted(variants))
+
+    def filter_members(
+        self, pitches_to_filter: typing.Sequence[parameters.pitches.JustIntonationPitch]
+    ) -> typing.Tuple[parameters.pitches.JustIntonationPitch, ...]:
+        return tuple(
+            filter(
+                lambda pitch: pitch >= self.borders[0] and pitch <= self.borders[1],
+                pitches_to_filter,
+            )
+        )

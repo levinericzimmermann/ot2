@@ -2,10 +2,13 @@
 
 
 if __name__ == "__main__":
-    from ot2 import parts
+    from mutwo import parameters
+
+    parameters.volumes_constants.MINIMUM_VELOCITY = 8
+    parameters.volumes_constants.MAXIMUM_VELOCITY = 35
+
+    from ot2 import register
     from ot2 import render
 
-    tagged_simultaneous_event, abjad_score, tempo_envelope = parts.dummy.DummyPart()()
-
-    render.render_abjad(abjad_score)
-    render.render_soundfiles(tagged_simultaneous_event, tempo_envelope)
+    register.main()
+    render.main()

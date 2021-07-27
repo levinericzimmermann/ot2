@@ -1,2 +1,2 @@
-from . import frontends
 from . import symmetrical
+from . import frontends

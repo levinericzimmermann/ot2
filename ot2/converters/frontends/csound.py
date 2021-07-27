@@ -39,10 +39,33 @@ class DroneSimultaneousEventToSoundFileConverter(csound.CsoundConverter):
             "{}/drone.sco".format(csound_constants.FILES_PATH),
             p4=lambda note_like: note_like.pitch_or_pitches[0].frequency,
             p5=lambda note_like: note_like.volume.amplitude,
+            p6=lambda note_like: note_like.attack,
+            p7=lambda note_like: note_like.sustain,
+            p8=lambda note_like: note_like.release,
         )
         super().__init__(
             "builds/drone.wav",
             "{}/drone.orc".format(csound_constants.FILES_PATH),
+            csound_score_converter,
+            remove_score_file=True,
+        )
+
+
+class SineTonesToSoundFileConverter(csound.CsoundConverter):
+    def __init__(self, instrument_id: str):
+        def get_pitch(note_like):
+            pitch_or_pitches = note_like.pitch_or_pitches
+            if len(pitch_or_pitches) > 0:
+                return note_like.pitch_or_pitches[0].frequency
+
+        csound_score_converter = csound.CsoundScoreConverter(
+            f"{csound_constants.FILES_PATH}/{instrument_id}.sco",
+            p4=get_pitch,
+            p5=lambda note_like: note_like.volume.amplitude,
+        )
+        super().__init__(
+            f"builds/{instrument_id}.wav",
+            "{}/sine.orc".format(csound_constants.FILES_PATH),
             csound_score_converter,
             remove_score_file=True,
         )
