@@ -12,3 +12,4 @@ from . import stochastic
 from . import common_harmonics
 from . import render
 from . import register
+from . import concatenate_score_parts

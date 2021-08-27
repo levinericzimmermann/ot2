@@ -27,9 +27,10 @@ class ExplicitFermata(
 
 class Noise(notation_indicators.Noise, abjad_attachments.BangFirstAttachment):
     border = 0.25
-    y_center = 2.5
+    y_center = 0.5
     maxima_width = 94
-    presence_to_height = {0: 2.5, 1: 3.5, 2: 4.7}
+    # presence_to_height = {0: 2.5, 1: 3.5, 2: 4.7}
+    presence_to_height = {0: 2.5, 1: 2.5, 2: 2.5}
     presence_to_color = {0: "#white", 1: "#(x11-color 'grey75)", 2: "#black"}
     density_to_percentage_density = {0: 0.075, 1: 0.2, 2: 0.4}
 
@@ -117,6 +118,17 @@ class Noise(notation_indicators.Noise, abjad_attachments.BangFirstAttachment):
         return "\n".join(boxes_and_spaces)
 
     def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        abjad.attach(
+            abjad.LilyPondLiteral(
+                "\\override Staff.StaffSymbol.line-count = #1", format_slot="before"
+            ),
+            leaf,
+        )
+        abjad.attach(
+            abjad.LilyPondLiteral("\\once \\hide Staff.Clef", format_slot="before"),
+            leaf,
+        )
+
         if self.density == 3:
             noise_string = Noise._make_continous_noise(self.presence)
         else:

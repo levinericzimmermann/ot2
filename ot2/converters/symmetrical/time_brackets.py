@@ -12,7 +12,7 @@ from mutwo import parameters
 from ot2 import constants as ot2_constants
 from ot2 import converters as ot2_converters
 from ot2 import events as ot2_events
-from ot2.parameters import ambitus
+from ot2 import parameters as ot2_parameters
 
 DEFAULT_MINIMAL_OVERLAPPING_PERCENTAGE = 0.75
 
@@ -159,7 +159,7 @@ class StartTimeToCalligraphicLineConverter(
         self,
         instrument_id: str,
         family_of_pitch_curves: events.families.FamilyOfPitchCurves,
-        instrument_ambitus: ambitus.Ambitus,
+        instrument_ambitus: ot2_parameters.ambitus.Ambitus,
         minimal_overlapping_percentage: float = DEFAULT_MINIMAL_OVERLAPPING_PERCENTAGE,
     ):
         super().__init__(
@@ -252,7 +252,7 @@ class StartTimeToMelodicPhraseConverter(
         self,
         instrument_id: str,
         family_of_pitch_curves: events.families.FamilyOfPitchCurves,
-        instrument_ambitus: ambitus.Ambitus,
+        instrument_ambitus: ot2_parameters.ambitus.Ambitus,
         minimal_overlapping_percentage: float = DEFAULT_MINIMAL_OVERLAPPING_PERCENTAGE,
     ):
         super().__init__(
@@ -395,8 +395,8 @@ class StartTimeToKeyboardTimeBracketsConverter(StartTimeToTimeBracketsConverter)
     def __init__(
         self,
         family_of_pitch_curves: events.families.FamilyOfPitchCurves,
-        right_hand_ambitus: ambitus.Ambitus,
-        left_hand_ambitus: ambitus.Ambitus,
+        right_hand_ambitus: ot2_parameters.ambitus.Ambitus,
+        left_hand_ambitus: ot2_parameters.ambitus.Ambitus,
         minimal_overlapping_percentage: float = 0.2,
     ):
         super().__init__(
@@ -412,8 +412,8 @@ class StartTimeToChordConverter(StartTimeToKeyboardTimeBracketsConverter):
     def __init__(
         self,
         family_of_pitch_curves: events.families.FamilyOfPitchCurves,
-        right_hand_ambitus: ambitus.Ambitus,
-        left_hand_ambitus: ambitus.Ambitus,
+        right_hand_ambitus: ot2_parameters.ambitus.Ambitus,
+        left_hand_ambitus: ot2_parameters.ambitus.Ambitus,
         minimal_overlapping_percentage: float = 0.2,
     ):
         super().__init__(

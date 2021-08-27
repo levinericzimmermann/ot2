@@ -51,6 +51,20 @@ class PhraseToTimeBracketConverter(converters.abc.Converter):
         self._start_or_start_range = start_or_start_range
         self._end_or_end_range = end_or_end_range
 
+    @staticmethod
+    def _add_cent_deviation(
+        sequential_event_to_process: events.basic.SequentialEvent[
+            events.music.NoteLike
+        ],
+    ):
+        for event in sequential_event_to_process:
+            if hasattr(event, "pitch_or_pitches") and event.pitch_or_pitches:
+                pitch_to_process = event.pitch_or_pitches[0]
+                deviation = (
+                    pitch_to_process.cent_deviation_from_closest_western_pitch_class
+                )
+                event.notation_indicators.cent_deviation.deviation = deviation
+
     def convert(
         self,
         phrase_to_convert: ot2_basic.SequentialEventWithTempo[phrases.PhraseEvent],
@@ -96,6 +110,9 @@ class PhraseToTimeBracketConverter(converters.abc.Converter):
 
         rough_sustaining_instrument_0[0].tie_by(
             condition=lambda ev0, ev1: ev0.pitch_or_pitches == ev1.pitch_or_pitches
+        )
+        PhraseToTimeBracketConverter._add_cent_deviation(
+            rough_sustaining_instrument_0[0]
         )
         time_bracket.append(rough_sustaining_instrument_0)
         time_bracket.append(rough_keyboard)

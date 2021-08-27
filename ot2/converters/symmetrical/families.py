@@ -9,15 +9,18 @@ import expenvelope
 from mutwo import converters
 from mutwo import events
 from mutwo import parameters
+from mutwo import utilities
 
-from ot2.parameters import ambitus
+from ot2 import parameters as ot2_parameters
 
 
 class PickPitchesFromCurveAndWeightPairsConverter(
     converters.symmetrical.families.PickElementFromCurveAndWeightPairsConverter
 ):
     def __init__(
-        self, instrument_ambitus: ambitus.Ambitus, seed: int = 10,
+        self,
+        instrument_ambitus: ot2_parameters.ambitus.Ambitus,
+        seed: int = 10,
     ):
         super().__init__(None, seed)
         self.instrument_ambitus = instrument_ambitus
@@ -69,7 +72,7 @@ class PickChordFromCurveAndWeightPairsConverter(
 ):
     def __init__(
         self,
-        instrument_ambitus: ambitus.Ambitus,
+        instrument_ambitus: ot2_parameters.ambitus.Ambitus,
         n_pitches_to_pick: int,
         seed: int = 10,
     ):
@@ -113,15 +116,23 @@ class PickChordFromCurveAndWeightPairsConverter(
             potential_pitch_and_weight_pairs = PickPitchesFromCurveAndWeightPairsConverter._get_potential_pitch_and_weight_pairs(
                 curve_and_weight_pairs
             )
-            potential_pitch_and_weight_pairs = self._filter_potential_pitches_by_ambitus(
-                potential_pitch_and_weight_pairs
+            potential_pitch_and_weight_pairs = (
+                self._filter_potential_pitches_by_ambitus(
+                    potential_pitch_and_weight_pairs
+                )
             )
-            potential_chord_and_weight_pairs = self._get_potential_chord_and_weight_pairs(
-                potential_pitch_and_weight_pairs
+            potential_chord_and_weight_pairs = (
+                self._get_potential_chord_and_weight_pairs(
+                    potential_pitch_and_weight_pairs
+                )
             )
             if potential_chord_and_weight_pairs:
                 chords, weights = zip(*potential_chord_and_weight_pairs)
-                choosen_pitches = self._random.choices(chords, weights, k=1)[0]
+                choosen_pitches = tuple(
+                    self._random.choice(
+                        chords, p=utilities.tools.scale_sequence_to_sum(weights, 1)
+                    )
+                )
                 converted_event.pitch_or_pitches = choosen_pitches
             del converted_event.curve_and_weight_pairs
 
@@ -158,11 +169,13 @@ class PickPitchLineFromCurveAndWeightPairsConverter(
     ) -> typing.Tuple[parameters.pitches.JustIntonationPitch, ...]:
         potential_pitch_and_weight_pairs_per_event = []
         for curve_and_weight_pairs in curve_and_weight_pairs_per_event:
-            potential_pitch_and_weight_pairs = self._get_potential_pitch_and_weight_pairs(
-                curve_and_weight_pairs
+            potential_pitch_and_weight_pairs = (
+                self._get_potential_pitch_and_weight_pairs(curve_and_weight_pairs)
             )
-            potential_pitch_and_weight_pairs = self._filter_potential_pitches_by_ambitus(
-                potential_pitch_and_weight_pairs
+            potential_pitch_and_weight_pairs = (
+                self._filter_potential_pitches_by_ambitus(
+                    potential_pitch_and_weight_pairs
+                )
             )
             potential_pitch_and_weight_pairs_per_event.append(
                 potential_pitch_and_weight_pairs
@@ -184,12 +197,15 @@ class PickPitchLineFromCurveAndWeightPairsConverter(
                 )
 
             pitches, weights = zip(*potential_pitch_and_weight_pairs)
-            choosen_pitch = self._random.choices(pitches, weights, k=1)[0]
+            choosen_pitch = self._random.choice(
+                pitches, p=utilities.tools.scale_sequence_to_sum(weights, 1)
+            )
             pitch_per_event.append(choosen_pitch)
         return pitch_per_event
 
     def _apply_pitches_on_sequential_event(
-        self, sequential_event_to_convert: events.basic.SequentialEvent,
+        self,
+        sequential_event_to_convert: events.basic.SequentialEvent,
     ):
         curve_and_weight_pairs_per_event = []
         melodic_phrases_indices = []
@@ -219,9 +235,9 @@ class PickPitchLineFromCurveAndWeightPairsConverter(
                 curve_and_weight_pairs_per_event[start_index:end_index]
             )
             for index, pitch in enumerate(pitch_per_event):
-                sequential_event_to_convert[
-                    index + start_index
-                ].pitch_or_pitches = [pitch]
+                sequential_event_to_convert[index + start_index].pitch_or_pitches = [
+                    pitch
+                ]
 
     def _convert_sequential_event(
         self,

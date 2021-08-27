@@ -1,7 +1,8 @@
 from mutwo.converters.frontends import csound
 from mutwo.events import music
 
-from ot2.converters.frontends import csound_constants
+from ot2 import converters as ot2_converters
+from ot2 import constants as ot2_constants
 
 
 class PercussiveSequentialEventToSoundFileConverter(csound.CsoundConverter):
@@ -13,7 +14,7 @@ class PercussiveSequentialEventToSoundFileConverter(csound.CsoundConverter):
             p5=lambda note_like: note_like.volume.amplitude,
         )
         super().__init__(
-            "builds/percussive.wav",
+            f"{ot2_constants.paths.SOUND_FILES_PATH}/percussive.wav",
             "ot2/converters/frontends/percussive.orc",
             csound_score_converter,
             remove_score_file=True,
@@ -27,7 +28,7 @@ class PercussiveSequentialEventToSoundFileConverter(csound.CsoundConverter):
             raise AttributeError()
 
         return next(
-            csound_constants.PERCUSSION_PITCH_TO_PERCUSSION_SAMPLES_CYCLE[
+            ot2_converters.frontends.csound_constants.PERCUSSION_PITCH_TO_PERCUSSION_SAMPLES_CYCLE[
                 pitch.pitch_class_name
             ]
         )
@@ -36,7 +37,7 @@ class PercussiveSequentialEventToSoundFileConverter(csound.CsoundConverter):
 class DroneSimultaneousEventToSoundFileConverter(csound.CsoundConverter):
     def __init__(self):
         csound_score_converter = csound.CsoundScoreConverter(
-            "{}/drone.sco".format(csound_constants.FILES_PATH),
+            "{}/drone.sco".format(ot2_converters.frontends.csound_constants.FILES_PATH),
             p4=lambda note_like: note_like.pitch_or_pitches[0].frequency,
             p5=lambda note_like: note_like.volume.amplitude,
             p6=lambda note_like: note_like.attack,
@@ -44,8 +45,8 @@ class DroneSimultaneousEventToSoundFileConverter(csound.CsoundConverter):
             p8=lambda note_like: note_like.release,
         )
         super().__init__(
-            "builds/drone.wav",
-            "{}/drone.orc".format(csound_constants.FILES_PATH),
+            "{ot2_constants.paths.SOUND_FILES_PATH}/drone.wav",
+            "{}/drone.orc".format(ot2_converters.frontends.csound_constants.FILES_PATH),
             csound_score_converter,
             remove_score_file=True,
         )
@@ -59,13 +60,13 @@ class SineTonesToSoundFileConverter(csound.CsoundConverter):
                 return note_like.pitch_or_pitches[0].frequency
 
         csound_score_converter = csound.CsoundScoreConverter(
-            f"{csound_constants.FILES_PATH}/{instrument_id}.sco",
+            f"{ot2_converters.frontends.csound_constants.FILES_PATH}/{instrument_id}.sco",
             p4=get_pitch,
             p5=lambda note_like: note_like.volume.amplitude,
         )
         super().__init__(
-            f"builds/{instrument_id}.wav",
-            "{}/sine.orc".format(csound_constants.FILES_PATH),
+            f"{ot2_constants.paths.SOUND_FILES_PATH}/{instrument_id}.wav",
+            "{}/sine.orc".format(ot2_converters.frontends.csound_constants.FILES_PATH),
             csound_score_converter,
             remove_score_file=True,
         )
