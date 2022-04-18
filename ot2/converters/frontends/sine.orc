@@ -7,8 +7,8 @@ nchnls = 1
 instr 1
     kcps = p4
     icontrolamp = p5
-    iattack = 1
-    irelease = 2
+    iattack = p3 * p6
+    irelease = p3 * p7
     isustain = p3 - iattack - irelease
 
     kenvelopeamp linseg 0, iattack, 1 , isustain, 1, irelease, 0

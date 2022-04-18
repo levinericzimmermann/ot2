@@ -4,6 +4,7 @@ ILLUSTRATIONS_PATH = f"{BUILD_PATH}/illustrations"
 MIDI_FILES_PATH = f"{BUILD_PATH}/midi"
 SOUND_FILES_PATH = f"{BUILD_PATH}/soundfiles"
 SCORES_PATH = f"{BUILD_PATH}/scores"
+KEYBOARD_CUES_PATH = f"{BUILD_PATH}/keyboard_cues"
 
 CONSTANTS_PATH = "ot2/constants"
 SCORE_CONSTANTS_PATH = f"{CONSTANTS_PATH}/score"

@@ -13,6 +13,7 @@ A3 = PaperFormat("a3", 297, 420)
 A2 = PaperFormat("a2", 420, 594)
 
 
+"""
 SEARCH_TREE = nauert.UnweightedSearchTree(
     definition={
         2: {
@@ -89,6 +90,35 @@ SEARCH_TREE = nauert.UnweightedSearchTree(
                         },
                     },
                 },
+            },
+        },
+    },
+)
+"""
+SEARCH_TREE = nauert.UnweightedSearchTree(
+    definition={
+        2: {
+            2: {
+                2: {
+                    2: None,
+                },
+                3: {
+                    2: None,
+                },
+            },
+            3: {
+                2: None,
+                3: None,
+            },
+        },
+        3: {
+            2: {
+                2: None,
+                3: None,
+            },
+            3: {
+                2: None,
+                3: None,
             },
         },
     },

@@ -73,11 +73,14 @@ class PickChordFromCurveAndWeightPairsConverter(
     def __init__(
         self,
         instrument_ambitus: ot2_parameters.ambitus.Ambitus,
-        n_pitches_to_pick: int,
+        n_pitches_to_pick: typing.Union[int, typing.Sequence[int]],
         seed: int = 10,
     ):
         super().__init__(instrument_ambitus, seed)
-        self.n_pitches_to_pick = n_pitches_to_pick
+        if isinstance(n_pitches_to_pick, int):
+            n_pitches_to_pick = (n_pitches_to_pick,)
+        n_pitches_to_pick_cycle = itertools.cycle(n_pitches_to_pick)
+        self.n_pitches_to_pick_cycle = n_pitches_to_pick_cycle
 
     def _get_potential_chord_and_weight_pairs(
         self,
@@ -89,8 +92,9 @@ class PickChordFromCurveAndWeightPairsConverter(
         ...,
     ]:
         potential_chord_and_weight_pairs = []
+        n_pitches_to_pick = next(self.n_pitches_to_pick_cycle)
         for combination in itertools.combinations(
-            potential_pitch_and_weight_pairs, self.n_pitches_to_pick
+            potential_pitch_and_weight_pairs, n_pitches_to_pick
         ):
             chord, weights = zip(*combination)
             resulting_intervals = tuple(

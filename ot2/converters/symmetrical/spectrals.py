@@ -7,9 +7,12 @@ from mutwo import parameters
 from mutwo import utilities
 
 from ot2 import constants
+from ot2 import converters as ot2_converters
 
 
 class TimeBracketContainerToSequentialEventsConverter(converters.abc.Converter):
+    puffer = 60 * 6  # 6 minutes longer if music is longer than predefined duration
+
     def __init__(self, tag: str):
         self._tag = tag
 
@@ -21,19 +24,27 @@ class TimeBracketContainerToSequentialEventsConverter(converters.abc.Converter):
         filtered_time_brackets = []
         # TODO(mutate / copy instead of altering the original object?)
         for time_bracket in extracted_time_brackets:
-            new_time_bracket = events.time_brackets.TimeBracket(
-                [
-                    simultaneous_event.copy()
-                    for simultaneous_event in time_bracket
-                    if simultaneous_event.tag == self._tag
-                ],
-                time_bracket.start_or_start_range,
-                time_bracket.end_or_end_range,
-            )
-            filtered_time_brackets.append(new_time_bracket)
+            if not isinstance(
+                time_bracket,
+                ot2_converters.symmetrical.cengkoks.RiverCengkokTimeBracket,
+            ):
+                new_time_bracket = events.time_brackets.TimeBracket(
+                    [
+                        simultaneous_event.copy()
+                        for simultaneous_event in time_bracket
+                        if simultaneous_event.tag == self._tag
+                    ],
+                    time_bracket.start_or_start_range,
+                    time_bracket.end_or_end_range,
+                )
+                filtered_time_brackets.append(new_time_bracket)
         resulting_sequential_events = tuple(
             events.basic.SequentialEvent(
-                [events.basic.SimpleEvent(constants.duration.DURATION_IN_SECONDS)]
+                [
+                    events.basic.SimpleEvent(
+                        constants.duration.DURATION_IN_SECONDS + self.puffer
+                    )
+                ]
             )
             for _ in range(
                 max(
@@ -139,7 +150,6 @@ class SequentialEventPairToCommonHarmonicsSequentialEvent(converters.abc.Convert
         ],
     ) -> events.basic.SequentialEvent:
         first_sequential_event, second_sequential_event = sequential_events_pair
-        print(first_sequential_event.duration, second_sequential_event.duration)
         resulting_sequential_event = events.basic.SequentialEvent([])
         for start_and_end_time, event in zip(
             first_sequential_event.start_and_end_time_per_event, first_sequential_event

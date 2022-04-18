@@ -9,7 +9,7 @@ from ot2 import converters
 
 
 @utilities.decorators.compute_lazy(
-    f"ot2/constants/.commonHarmonics.pickle",
+    "ot2/constants/.commonHarmonics.pickle",
     force_to_compute=constants.compute.COMPUTE_COMMON_HARMONICS,
 )
 def main() -> typing.Tuple[typing.Tuple[str, events.basic.SequentialEvent], ...]:

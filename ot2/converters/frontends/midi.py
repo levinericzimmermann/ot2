@@ -96,6 +96,16 @@ class SustainingInstrumentEventToMidiFileConverter(
         )
 
 
+class DroneFofEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
+    def __init__(self, nth_voice: int):
+        super().__init__(
+            path=f"{ot2_constants.paths.MIDI_FILES_PATH}/drone_{nth_voice}.mid",
+            midi_file_type=1,  # polyphon instruments
+            min_velocity=2,
+            max_velocity=120,
+        )
+
+
 class DroneEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
     def __init__(self):
         super().__init__(
@@ -141,4 +151,37 @@ class CommonHarmonicEventToMidiFileConverter(OT2InstrumentEventToMidiFileConvert
         super().__init__(
             path=f"{ot2_constants.paths.MIDI_FILES_PATH}/common_harmonics_{name}.mid",
             midi_file_type=1,  # polyphon ot2_constants.instruments
+        )
+
+
+class GongEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
+    def __init__(self):
+        super().__init__(
+            path=f"{ot2_constants.paths.MIDI_FILES_PATH}/gong.mid",
+            midi_file_type=1,  # polyphon instruments
+            min_velocity=2,
+            max_velocity=127,
+            apply_extrema=False,
+        )
+
+
+class PillowEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
+    def __init__(self, nth_voice: int):
+        super().__init__(
+            path=f"{ot2_constants.paths.MIDI_FILES_PATH}/pillow_{nth_voice}.mid",
+            midi_file_type=1,  # polyphon instruments
+            min_velocity=2,
+            max_velocity=120,
+            distribute_midi_channels=True,
+            n_midi_channels_per_track=1,
+        )
+
+
+class MonitorSineEventToMidiFileConverter(OT2InstrumentEventToMidiFileConverter):
+    def __init__(self, nth_voice: int):
+        super().__init__(
+            path=f"{ot2_constants.paths.MIDI_FILES_PATH}/sine_{nth_voice}.mid",
+            midi_file_type=1,  # polyphon instruments
+            min_velocity=2,
+            max_velocity=120,
         )

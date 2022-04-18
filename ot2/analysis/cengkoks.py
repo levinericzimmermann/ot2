@@ -29,6 +29,54 @@ def _load_bonang_cengkoks() -> typing.Dict[
     return bonang_cengkoks
 
 
+def _load_gambang_cengkoks() -> typing.Dict[
+    int, typing.Dict[int, typing.Tuple[typing.Tuple[str, typing.Tuple[int, ...]], ...]]
+]:
+    basic_path = "ot2/analysis/data/cengkoks/gambangan/seleh"
+    bonang_cengkoks = {}
+    for n_beats, path_suffix in ((16, "16beats"),):
+        n_beats_data = {}
+        path = f"{basic_path}/{path_suffix}"
+        for seleh in (1, 2, 3, 5, 6):
+            json_path = f"{path}/{seleh}.json"
+            with open(json_path, "r") as f:
+                cengkok_data = json.load(f)
+            n_beats_data.update(
+                {
+                    seleh: tuple(
+                        (cengkok["pitches"], tuple(cengkok["rhythms"]))
+                        for cengkok in cengkok_data
+                    )
+                }
+            )
+        bonang_cengkoks.update({n_beats: n_beats_data})
+    return bonang_cengkoks
+
+
+def _load_balungan_cengkoks() -> typing.Dict[
+    int, typing.Dict[int, typing.Tuple[typing.Tuple[str, typing.Tuple[int, ...]], ...]]
+]:
+    basic_path = "ot2/analysis/data/cengkoks/balungan"
+    balungan_cengkoks = {}
+    for n_beats, path_suffix in ((4, ""),):
+        n_beats_data = {}
+        path = f"{basic_path}/{path_suffix}"
+        for seleh in (1, 2, 3, 5, 6):
+            json_path = f"{path}/{seleh}.json"
+            with open(json_path, "r") as f:
+                cengkok_data = json.load(f)
+            n_beats_data.update(
+                {
+                    seleh: tuple(
+                        (cengkok["pitches"], tuple(cengkok["rhythms"]))
+                        for cengkok in cengkok_data
+                    )
+                }
+            )
+        balungan_cengkoks.update({n_beats: n_beats_data})
+    return balungan_cengkoks
+
+
 def _load_celempung_cengkoks() -> typing.Dict[
     int, typing.Dict[int, typing.Tuple[typing.Tuple[str, typing.Tuple[int, ...]], ...]]
 ]:
@@ -82,4 +130,8 @@ def _concatenate_cengkok_collections(
 
 BONANG_CENGKOKS = _load_bonang_cengkoks()
 CELEMPUNG_CENGKOKS = _load_celempung_cengkoks()
-CENGKOKS = _concatenate_cengkok_collections(BONANG_CENGKOKS, CELEMPUNG_CENGKOKS)
+BALUNGAN_CENGKOKS = _load_balungan_cengkoks()
+GAMBGANG_CENGKOKS = _load_gambang_cengkoks()
+CENGKOKS = _concatenate_cengkok_collections(
+    BONANG_CENGKOKS, CELEMPUNG_CENGKOKS, BALUNGAN_CENGKOKS, GAMBGANG_CENGKOKS
+)

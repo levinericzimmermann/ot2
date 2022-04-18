@@ -14,13 +14,32 @@ class ExplicitFermata(abc.ImplicitPlayingIndicator):
     waiting_range: typing.Optional[typing.Tuple[int, int]] = None
 
 
+@dataclasses.dataclass()
+class Cue(abc.ImplicitPlayingIndicator):
+    nth_cue: typing.Optional[int] = None
+
+
+@dataclasses.dataclass()
+class Embouchure(abc.ImplicitPlayingIndicator):
+    hint: typing.Optional[str] = None
+
+
+
+@dataclasses.dataclass()
+class Fingering(abc.ImplicitPlayingIndicator):
+    cc: typing.Optional[typing.Tuple[str, ...]] = None
+    lh: typing.Optional[typing.Tuple[str, ...]] = None
+    rh: typing.Optional[typing.Tuple[str, ...]] = None
+
+
 @dataclasses.dataclass(frozen=True)
 class OT2PlayingIndicatorCollection(playing_indicators.PlayingIndicatorCollection):
-    # this is kind of redundant, but perhaps still better than without using
-    # the `dataclasses` module
+    cue: Cue = dataclasses.field(default_factory=Cue)
+    embouchure: Embouchure = dataclasses.field(default_factory=Embouchure)
     explicit_fermata: ExplicitFermata = dataclasses.field(
         default_factory=ExplicitFermata
     )
+    fingering: Fingering = dataclasses.field(default_factory=Fingering)
 
 
 # set mutwo default values

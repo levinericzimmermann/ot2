@@ -9,6 +9,24 @@ from ot2.parameters import notation_indicators
 from ot2.parameters import playing_indicators
 
 
+class Cue(playing_indicators.Cue, abjad_attachments.BangFirstAttachment):
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        abjad.attach(
+            abjad.Markup(contents=f"\\rounded-box {{ {self.nth_cue} }}", direction="^"),
+            leaf,
+        )
+        return leaf
+
+
+class Embouchure(playing_indicators.Embouchure, abjad_attachments.BangFirstAttachment):
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        abjad.attach(
+            abjad.Markup(contents=self.hint, direction="^"),
+            leaf,
+        )
+        return leaf
+
+
 class ExplicitFermata(
     playing_indicators.ExplicitFermata, abjad_attachments.BangFirstAttachment
 ):
@@ -20,7 +38,8 @@ class ExplicitFermata(
             leaf,
         )
         abjad.attach(
-            abjad.Fermata(self.fermata_type), leaf,
+            abjad.Fermata(self.fermata_type),
+            leaf,
         )
         return leaf
 
@@ -61,10 +80,14 @@ class Noise(notation_indicators.Noise, abjad_attachments.BangFirstAttachment):
         return "\n".join(lines)
 
     @staticmethod
-    def _make_continous_noise(presence: int) -> str:
+    def _make_continous_noise(presence: int, is_pitch: bool) -> str:
+        if is_pitch:
+            height_factor = 0.5
+        else:
+            height_factor = 1
         return Noise._make_box(
             Noise.presence_to_color[presence],
-            Noise.presence_to_height[presence],
+            Noise.presence_to_height[presence] * height_factor,
             Noise.maxima_width,
             Noise.border,
         )
@@ -78,7 +101,7 @@ class Noise(notation_indicators.Noise, abjad_attachments.BangFirstAttachment):
         return box_blueprint
 
     @staticmethod
-    def _make_discreet_noise_distances(
+    def _make_unperiodic_discreet_noise_distances(
         density: int, width: float, box_width: float
     ) -> typing.Tuple[float, ...]:
         max_n_boxes = width / (box_width + 0.25)
@@ -104,12 +127,35 @@ class Noise(notation_indicators.Noise, abjad_attachments.BangFirstAttachment):
         return tuple(horizontal_distances)
 
     @staticmethod
-    def _make_discreet_noise(density: int, presence: int) -> str:
+    def _make_periodic_discreet_noise_distances(
+        density: int, width: float, box_width: float
+    ):
+        max_n_boxes = width / (box_width + 0.25)
+        n_boxes_to_distribute = int(
+            Noise.density_to_percentage_density[density] * max_n_boxes
+        )
+        remaining_space = width - (n_boxes_to_distribute * box_width)
+        average_horizontal_distance = remaining_space / n_boxes_to_distribute
+        return tuple(
+            average_horizontal_distance for _ in range(n_boxes_to_distribute)
+        )
+
+    @staticmethod
+    def _make_discreet_noise_distances(
+        density: int, width: float, box_width: float, is_periodic: bool
+    ) -> typing.Tuple[float, ...]:
+        if is_periodic:
+            return Noise._make_periodic_discreet_noise_distances(density, width, box_width)
+        else:
+            return Noise._make_unperiodic_discreet_noise_distances(density, width, box_width)
+
+    @staticmethod
+    def _make_discreet_noise(density: int, presence: int, is_periodic: bool) -> str:
         box_width = 0.9
         box_blueprint = Noise._make_discreet_noise_blueprint_box(presence, box_width)
         width = 80
         horizontal_distances = Noise._make_discreet_noise_distances(
-            density, width, box_width
+            density, width, box_width, is_periodic
         )
         boxes_and_spaces = []
         for distance in horizontal_distances:
@@ -130,17 +176,47 @@ class Noise(notation_indicators.Noise, abjad_attachments.BangFirstAttachment):
         )
 
         if self.density == 3:
-            noise_string = Noise._make_continous_noise(self.presence)
+            noise_string = Noise._make_continous_noise(self.presence, self.is_pitch)
         else:
-            noise_string = Noise._make_discreet_noise(self.density, self.presence)
+            noise_string = Noise._make_discreet_noise(
+                self.density, self.presence, self.is_periodic
+            )
 
         lilypond_literal = abjad.LilyPondLiteral(
             r"_\markup { " + noise_string + " }", "after"
         )
 
         abjad.attach(
-            lilypond_literal, leaf,
+            lilypond_literal,
+            leaf,
         )
+        return leaf
+
+
+class Fingering(playing_indicators.Fingering, abjad_attachments.BangFirstAttachment):
+    fingering_size = 0.7
+
+    @staticmethod
+    def _tuple_to_scheme_list(tuple_to_convert: typing.Tuple[str, ...]) -> str:
+        return f"({' '.join(tuple_to_convert)})"
+
+    def _get_markup_content(self) -> str:
+        # \\override #'(graphical . #f)
+        return f"""
+\\override #'(size . {self.fingering_size})
+{{
+    \\woodwind-diagram
+    #'clarinet
+    #'((cc . {self._tuple_to_scheme_list(self.cc)})
+       (lh . {self._tuple_to_scheme_list(self.lh)})
+       (rh . {self._tuple_to_scheme_list(self.rh)}))
+}}"""
+
+    def process_leaf(self, leaf: abjad.Leaf) -> abjad.Leaf:
+        fingering = abjad.LilyPondLiteral(
+            f"^\\markup {self._get_markup_content()}", format_slot="after"
+        )
+        abjad.attach(fingering, leaf)
         return leaf
 
 
@@ -158,7 +234,8 @@ class CentDeviation(
                 "\\tiny { " + f"{prefix}{adjusted_deviation} ct" + " } ", direction="up"
             )
             abjad.attach(
-                markup, leaf,
+                markup,
+                leaf,
             )
         return leaf
 
@@ -166,5 +243,5 @@ class CentDeviation(
 # override mutwo default value
 mutwo_abjad_constants.DEFAULT_ABJAD_ATTACHMENT_CLASSES = (
     mutwo_abjad_constants.DEFAULT_ABJAD_ATTACHMENT_CLASSES
-    + (ExplicitFermata, Noise, CentDeviation)
+    + (ExplicitFermata, Embouchure, Noise, CentDeviation, Cue, Fingering)
 )

@@ -3,13 +3,26 @@ import typing
 import abjad  # type: ignore
 import expenvelope  # type: ignore
 
+from mutwo import events
 from mutwo.converters.frontends import abjad as mutwo_abjad
 from mutwo.parameters import tempos
 
 from ot2.converters.frontends.abjad import base
-from ot2.converters.frontends import abjad_constants as ot2_abjad_constants
-from ot2.converters.frontends import abjad_process_container_routines as ot2_abjad_process_container_routines
+from ot2.converters.frontends import (
+    abjad_process_container_routines as ot2_abjad_process_container_routines,
+)
 from ot2 import constants as ot2_constants
+
+MAKE_VIDEO = False
+
+
+class SequentialEventToAbjadStaffConverter(
+    mutwo_abjad.SequentialEventToAbjadVoiceConverter
+):
+    def convert(self, *args, **kwargs) -> abjad.Staff:
+        # print("")
+        # print(*args)
+        return abjad.Staff([super().convert(*args, **kwargs)])
 
 
 # ######################################################## #
@@ -36,13 +49,14 @@ class CengkokSimultaneousEventToAbjadStaffGroupConverter(
         tempo_envelope = expenvelope.Envelope.from_points(
             (0, tempo_point), (10, tempo_point)
         )
-        sequential_event_to_abjad_voice_converter = mutwo_abjad.SequentialEventToAbjadVoiceConverter(
-            mutwo_abjad.SequentialEventToQuantizedAbjadContainerConverter(
+        sequential_event_to_abjad_voice_converter = SequentialEventToAbjadStaffConverter(
+            mutwo_abjad.FastSequentialEventToQuantizedAbjadContainerConverter(
                 time_signatures=time_signatures,
                 tempo_envelope=tempo_envelope,
-                search_tree=ot2_abjad_constants.SEARCH_TREE,
+                # search_tree=ot2_abjad_constants.SEARCH_TREE,
             ),
             mutwo_pitch_to_abjad_pitch_converter=mutwo_pitch_to_abjad_pitch_converter,
+            write_multimeasure_rests=True,
         )
         super().__init__(
             mutwo_abjad.CycleBasedNestedComplexEventToComplexEventToAbjadContainerConvertersConverter(
@@ -101,17 +115,18 @@ class CengkokSustainingInstrumentToAbjadStaffGroupConverter(
 class CengkokTimeBracketToAbjadScoreBlockConverter(
     base.TimeBracketToAbjadScoreBlockConverter
 ):
-    nth_score_counter = 0
+    _nth_cengkok_counter = 0
 
     def __init__(
         self,
         time_signatures: typing.Sequence[abjad.TimeSignature],
         tempo_point: tempos.TempoPoint,
         post_process_abjad_container_routines: typing.Sequence = [],
+        **kwargs
     ):
         def get_score_name(_):
-            score_name = f"cengkokScore{self._nth_score_counter}"
-            self._nth_score_counter += 1
+            score_name = f"cengkokScore{self._nth_cengkok_counter}"
+            self._nth_cengkok_counter += 1
             return score_name
 
         tag_to_converter = {}
@@ -147,13 +162,33 @@ class CengkokTimeBracketToAbjadScoreBlockConverter(
 
         post_process_abjad_container_routines = tuple(
             post_process_abjad_container_routines
-        ) + (
-            ot2_abjad_process_container_routines.PostProcessCengkokTimeBracket(),
-        )
+        ) + (ot2_abjad_process_container_routines.PostProcessCengkokTimeBracket(),)
         super().__init__(
             mutwo_abjad.TagBasedNestedComplexEventToComplexEventToAbjadContainerConvertersConverter(
                 tag_to_converter
             ),
-            post_process_abjad_container_routines=post_process_abjad_container_routines,
-            complex_event_to_abjad_container_name=get_score_name,
+            get_score_name,
+            post_process_abjad_container_routines,
+            **kwargs
         )
+
+    def get_score_name(self):
+        score_name = f"cengkokScore{self._nth_cengkok_counter}"
+        self._nth_cengkok_counter += 1
+        return score_name
+
+    def convert(
+        self, time_bracket_to_convert: events.time_brackets.TimeBracket
+    ) -> abjad.Score:
+        abjad_score_block = super().convert(time_bracket_to_convert)
+        abjad_score_block.items[0].name = self.get_score_name()
+        if self.render_video:
+            note_length = 4
+            n_notes = int(time_bracket_to_convert[0].duration * note_length)
+            staff = abjad.Staff(
+                [abjad.Voice([abjad.Note(f"b'{note_length}") for _ in range(n_notes)])]
+            )
+            ot2_abjad_process_container_routines.TicksMixin()(None, staff)
+            abjad_score_block.items[0].append(staff)
+
+        return abjad_score_block

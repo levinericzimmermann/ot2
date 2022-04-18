@@ -11,7 +11,8 @@ def load_cantus_firmus():
     import music21
 
     m21_lasso_measures = music21.converter.parse(
-        "ot2/analysis/data/lasso_cantus_firmus.mxl"
+        # "ot2/analysis/data/lasso_cantus_firmus.mxl"
+        "ot2/analysis/data/lasso_adjusted_cantus_firmus.mxl"
     )[1].getElementsByClass("Measure")
     mutwo_lasso = basic.SequentialEvent([])
 

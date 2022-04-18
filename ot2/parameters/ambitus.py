@@ -113,3 +113,10 @@ class Ambitus(object):
                 pitches_to_filter,
             )
         )
+
+    def is_member(
+        self, pitch_to_examine: parameters.pitches.JustIntonationPitch
+    ) -> bool:
+        return (
+            pitch_to_examine >= self.borders[0] and pitch_to_examine <= self.borders[1]
+        )

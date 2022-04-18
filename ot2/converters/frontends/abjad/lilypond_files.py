@@ -18,34 +18,35 @@ from . import settings
 class AbjadScoresToLilypondFileConverter(converters_abc.Converter):
     def __init__(
         self,
-        instrument: typing.Optional[str] = None,
+        instrument_tag: typing.Optional[str] = None,
         paper_format: abjad_constants.PaperFormat = abjad_constants.A4,
+        render_video: bool = False,
     ):
-        self._instrument = instrument
+        self._instrument_tag = instrument_tag
         self._paper_format = paper_format
+        self._render_video = render_video
 
     def _stress_instrument(self, abjad_score: abjad.Score):
         pass
 
     @staticmethod
-    def _make_header_block(instrument: typing.Optional[str]) -> abjad.Block:
+    def _make_header_block(instrument_tag: typing.Optional[str]) -> abjad.Block:
         header_block = abjad.Block("header")
         header_block.title = '"ohne Titel (2)"'
         header_block.year = '"2021"'
         header_block.composer = '"Levin Eric Zimmermann"'
         header_block.tagline = '"oT(2) // 2021"'
-        if instrument:
-            header_block.instrument = (
+        if instrument_tag:
+            header_block.instrument = '"{} part book"'.format(
                 ot2_constants.instruments.INSTRUMENT_ID_TO_LONG_INSTRUMENT_NAME[
-                    instrument
+                    instrument_tag
                 ]
             )
         return header_block
 
-    @staticmethod
-    def _make_paper_block() -> abjad.Block:
+    def _make_paper_block(self) -> abjad.Block:
         paper_block = abjad.Block("paper")
-        if not settings.USE_VIDEO_SETTINGS:
+        if not self._render_video:
             paper_block.items.append(
                 r"""#(define fonts
         (make-pango-font-tree "EB Garamond"
@@ -54,12 +55,12 @@ class AbjadScoresToLilypondFileConverter(converters_abc.Converter):
                             (/ staff-height pt 20)))"""
             )
             paper_block.items.append(
-                r"""score-system-spacing =
-        #'((basic-distance . 30)
-        (minimum-distance . 18)
-        (padding . 1)
-        (stretchability . 12))"""
-            )
+                    r"""score-system-spacing =
+            #'((basic-distance . 30)
+            (minimum-distance . 18)
+            (padding . 1)
+            (stretchability . 12))"""
+                )
         return paper_block
 
     def convert(self, abjad_scores: typing.Sequence[abjad.Block]) -> abjad.LilyPondFile:
@@ -71,13 +72,13 @@ class AbjadScoresToLilypondFileConverter(converters_abc.Converter):
         for abjad_score in abjad_scores:
             lilypond_file.items.append(abjad_score)
 
-        if not settings.USE_VIDEO_SETTINGS:
+        if not self._render_video:
             lilypond_file.items.append(
-                AbjadScoresToLilypondFileConverter._make_header_block(self._instrument)
+                AbjadScoresToLilypondFileConverter._make_header_block(
+                    self._instrument_tag
+                )
             )
-        lilypond_file.items.append(
-            AbjadScoresToLilypondFileConverter._make_paper_block()
-        )
+        lilypond_file.items.append(self._make_paper_block())
 
         lilypond_file.items.append("\\pointAndClickOff\n")
 

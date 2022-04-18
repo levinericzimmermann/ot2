@@ -10,6 +10,8 @@ from mutwo.parameters import notation_indicators
 class Noise(abc.ImplicitPlayingIndicator):
     presence: typing.Optional[int] = None
     density: typing.Optional[int] = None
+    is_periodic: typing.Optional[bool] = False
+    is_pitch: typing.Optional[bool] = False
 
 
 @dataclasses.dataclass()

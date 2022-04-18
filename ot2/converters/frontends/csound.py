@@ -45,7 +45,7 @@ class DroneSimultaneousEventToSoundFileConverter(csound.CsoundConverter):
             p8=lambda note_like: note_like.release,
         )
         super().__init__(
-            "{ot2_constants.paths.SOUND_FILES_PATH}/drone.wav",
+            f"{ot2_constants.paths.SOUND_FILES_PATH}/drone.wav",
             "{}/drone.orc".format(ot2_converters.frontends.csound_constants.FILES_PATH),
             csound_score_converter,
             remove_score_file=True,
@@ -63,10 +63,44 @@ class SineTonesToSoundFileConverter(csound.CsoundConverter):
             f"{ot2_converters.frontends.csound_constants.FILES_PATH}/{instrument_id}.sco",
             p4=get_pitch,
             p5=lambda note_like: note_like.volume.amplitude,
+            p6=lambda note_like: note_like.attack
+            if hasattr(note_like, "attack")
+            else 0.12,
+            p7=lambda note_like: note_like.release
+            if hasattr(note_like, "release")
+            else 0.15,
         )
         super().__init__(
             f"{ot2_constants.paths.SOUND_FILES_PATH}/{instrument_id}.wav",
             "{}/sine.orc".format(ot2_converters.frontends.csound_constants.FILES_PATH),
             csound_score_converter,
             remove_score_file=True,
+        )
+
+
+class PillowEventsToSoundFileConverter(csound.CsoundConverter):
+    def __init__(self, instrument_id: str):
+        def get_pitch(note_like):
+            pitch_or_pitches = note_like.pitch_or_pitches
+            if len(pitch_or_pitches) > 0:
+                return note_like.pitch_or_pitches[0].frequency
+
+        csound_score_converter = csound.CsoundScoreConverter(
+            f"{ot2_converters.frontends.csound_constants.FILES_PATH}/{instrument_id}.sco",
+            p4=get_pitch,
+            p5=lambda pillow_event: pillow_event.volume.amplitude,
+            p6=lambda pillow_event: float(pillow_event.attack_duration)
+            if hasattr(pillow_event, "attack_duration")
+            else 0.2,
+            p7=lambda pillow_event: float(pillow_event.release_duration)
+            if hasattr(pillow_event, "release_duration")
+            else 0.2,
+        )
+        super().__init__(
+            f"{ot2_constants.paths.SOUND_FILES_PATH}/{instrument_id}.wav",
+            "{}/pillow.orc".format(
+                ot2_converters.frontends.csound_constants.FILES_PATH
+            ),
+            csound_score_converter,
+            remove_score_file=False,
         )

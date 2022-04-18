@@ -94,7 +94,7 @@ def _structure_time(
         )
 
         if remaining_duration < 0:
-            remaining_duration = 30
+            remaining_duration = ADDED_DURATION_FOR_STOCHASTIC_PART_IF_CENGKOK_PART_IS_TOO_LONG
             warnings.warn(
                 f"The phrase part number '{nth_phrase_part}' has a too long cengkok"
                 " based area, so that there isn't any time left for the stochastic"
@@ -109,6 +109,8 @@ def _structure_time(
 
     return structure
 
+
+ADDED_DURATION_FOR_STOCHASTIC_PART_IF_CENGKOK_PART_IS_TOO_LONG = 10
 
 STRUCTURE: StructureType = _structure_time(
     phrases.SPLITTED_PARTS, phrase_parts.PHRASE_PARTS, ot2_duration.DURATION_IN_SECONDS

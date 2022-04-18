@@ -126,14 +126,20 @@ class BestCengkokFinder(object):
         else:
             common_pitch_index = 0
 
-        seleh = (1, 2, 3, 5, 6)[common_pitch_index]
+        seleh = (1, 2, 3, 4, 5, 6)[common_pitch_index]
+        seleh_is_four = False
+        if seleh == 4:
+            seleh_is_four = True
+            seleh = 3
+
         cengkoks_to_use = available_cengkoks[seleh]
 
         decodex = {
             java_pitch_index: pitch
-            for java_pitch_index, pitch in zip("1 2 3 5 6".split(" "), current_harmony)
+            for java_pitch_index, pitch in zip(
+                "1 2 3 4 5 6".split(" "), current_harmony
+            )
         }
-        decodex.update({"4": current_harmony[2]})
         pitch_converter = mmml.MMMLPitchesConverter(
             mmml.MMMLSinglePitchConverter(decodex, apply_octave_mark,)
         )
@@ -141,6 +147,15 @@ class BestCengkokFinder(object):
         possible_melodies = []
         for cengkok_pitches, cengkok_rhythms in cengkoks_to_use:
             cengkok_pitches = pitch_converter.convert(cengkok_pitches)
+            if seleh_is_four:
+                cengkok_pitches = cengkok_pitches[:-1] + (
+                    (
+                        decodex["4"].register(
+                            cengkok_pitches[-1][0].octave, mutate=False
+                        ),
+                    ),
+                )
+
             melody = basic.SequentialEvent(
                 [
                     music.NoteLike(pitch, fractions.Fraction(rhythm, 4))
@@ -461,7 +476,7 @@ def illustrate_cengkoks(applied_melodies):
 def synthesize_applied_cengkoks(applied_cengkoks: basic.SequentialEvent):
     from mutwo.converters.frontends import midi
 
-    converter = midi.MidiFileConverter("builds/applied_cengkoks.mid")
+    converter = midi.MidiFileConverter("builds/materials/applied_cengkoks.mid")
     converter.convert(
         applied_cengkoks.set_parameter(
             "duration", lambda duration: duration * 4, mutate=False
@@ -474,5 +489,6 @@ APPLIED_CENGKOKS = load_cengkoks()
 
 if __name__ == "__main__":
     find_best_cengkoks(50, 700)
+    APPLIED_CENGKOKS = load_cengkoks()
     synthesize_applied_cengkoks(APPLIED_CENGKOKS)
     illustrate_cengkoks(APPLIED_CENGKOKS)

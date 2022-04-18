@@ -29,6 +29,7 @@ class PhraseEvent(basic.SimpleEvent):
         root: pitches.JustIntonationPitch,
         connection_pitch0: typing.Optional[pitches.JustIntonationPitch],
         connection_pitch1: typing.Optional[pitches.JustIntonationPitch],
+        is_start_of_phrase: bool,
     ):
         super().__init__(duration)
         self.all_pitches = all_pitches
@@ -51,6 +52,8 @@ class PhraseEvent(basic.SimpleEvent):
         else:
             self.connection_pitch1_index = None
 
+        self.is_start_of_phrase = is_start_of_phrase
+
 
 Phrases = typing.Tuple[basic.SequentialEvent[PhraseEvent], ...]
 
@@ -60,7 +63,10 @@ def _get_common_pitch(event0, event1):
         set(
             map(lambda pitch: pitch.normalize(mutate=False).exponents, pitch_or_pitches)
         )
-        for pitch_or_pitches in (event0.pitch_or_pitches, event1.pitch_or_pitches,)
+        for pitch_or_pitches in (
+            event0.pitch_or_pitches,
+            event1.pitch_or_pitches,
+        )
     )
     roots = (
         event0.pitch_or_pitches[0].normalize(mutate=False).exponents,
@@ -83,12 +89,14 @@ def _split_part_in_phrases(part: basic.SequentialEvent) -> Phrases:
     else:
         phrase_size = iter((4, 4, 4, 23))
     current_phrase_size = next(phrase_size)
+    is_start_of_phrase = True
 
     for nth_event, event in enumerate(part):
         if len(current_phrase) == current_phrase_size:
             phrases.append(current_phrase)
             current_phrase = basic.SequentialEvent([])
             current_phrase_size = next(phrase_size)
+            is_start_of_phrase = True
 
         try:
             next_event = part[nth_event + 1]
@@ -116,8 +124,10 @@ def _split_part_in_phrases(part: basic.SequentialEvent) -> Phrases:
             event.pitch_or_pitches[0],
             connection_pitch0,
             connection_pitch1,
+            is_start_of_phrase,
         )
         current_phrase.append(phrase_event)
+        is_start_of_phrase = False
 
     phrases.append(current_phrase)
     return tuple(phrases)
@@ -182,7 +192,10 @@ def _apply_pulse_duration_on_cantus_firmus(
 
 
 def _export_splitted_parts(splitted_parts=typing.Tuple[Phrases, ...]):
-    with open(phrases_constants.SPLITTED_PARTS_PATH, "wb",) as f:
+    with open(
+        phrases_constants.SPLITTED_PARTS_PATH,
+        "wb",
+    ) as f:
         pickle.dump(splitted_parts, f)
 
 
@@ -200,7 +213,10 @@ def _make_splitted_parts():
 
 
 def _import_splitted_parts() -> typing.Tuple[Phrases, ...]:
-    with open(phrases_constants.SPLITTED_PARTS_PATH, "rb",) as f:
+    with open(
+        phrases_constants.SPLITTED_PARTS_PATH,
+        "rb",
+    ) as f:
         splitted_parts = pickle.load(f)
     return splitted_parts
 
@@ -215,7 +231,7 @@ def synthesize_splitted_parts(splitted_parts: typing.Tuple[Phrases, ...]):
     melody = functools.reduce(operator.add, functools.reduce(operator.add, melody))
 
     def simple_event_to_pitches(simple_event):
-        return [simple_event.root - pitches.JustIntonationPitch('2/1')]
+        return [simple_event.root - pitches.JustIntonationPitch("2/1")]
 
     converter = midi.MidiFileConverter(
         "builds/materials/splitted_parts.mid",

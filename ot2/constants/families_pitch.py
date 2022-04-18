@@ -112,7 +112,6 @@ def _extend_cps_scale_melody(
     given_scale: typing.Tuple[pitches.JustIntonationPitch, ...],
     size_of_resulting_melody: int,
 ) -> typing.Tuple[pitches.JustIntonationPitch, ...]:
-
     pitch_to_counter = {pitch.exponents: 0 for pitch in given_scale}
     for pitch in given_melody:
         pitch_to_counter[pitch.exponents] += 1
@@ -337,9 +336,11 @@ def _filter_curves_with_unnotateable_pitches(
         for exponent, prime in zip(pitch.exponents, pitch.primes):
             if prime > 3:
                 try:
-                    max_exponent = ekmelily_constants.DEFAULT_PRIME_TO_HIGHEST_ALLOWED_EXPONENT[
-                        prime
-                    ]
+                    max_exponent = (
+                        ekmelily_constants.DEFAULT_PRIME_TO_HIGHEST_ALLOWED_EXPONENT[
+                            prime
+                        ]
+                    )
                 except KeyError:
                     max_exponent = None
                     is_notateable = False
@@ -361,25 +362,26 @@ def _import(path: str):
     return object_
 
 
-GENERATIONS = 100
+# GENERATIONS = 100
 # GENERATIONS = 2
+GENERATIONS = 200
 POPULATION_SIZE = 80
 
 FAMILIES_PITCH_PATH = "ot2/constants/FAMILIES_PITCH.pickle"
 
 FAMILY_DATA_PER_PART = (
     # PART(N_ROOT_NOTES_PER_FAMILY, DENSITY, REST_DURATION_PERCENTAGE)
-    ((3, 4), 0.75, (0.25, 0.9, 0.1)),  # 1
-    ((4, 2), 0.7, (0.335, 0.65, 0.085)),
-    ((3, 5), 0.6, (0.7, 0.6, 0.1)),
-    ((2, 2), 0.4),
-    ((3, 2, 5), 0.5),  # 5
-    ((4,), 0.7),
-    ((3, 2, 5), 0.4),
-    ((3, 2, 5), 0.5),
-    ((3, 2, 5), 0.8),
-    ((3, 2, 5), 0.5),  # 10
-    ((3, 2, 5), 0.4),
+    ((2, 3), 0.75, (0.25, 0.9, 0.1)),  # 1  langsamer anfang mit field recording, erste inseln
+    ((3, 2), 0.7, (0.335, 0.65, 0.085)),  # weiter inseln, am ende contapunctus_simpliccisimus
+    ((3, 4), 0.885, (0.3, 0.2, 0.1)),  # sehr leise, nur klavierakkorde & noise
+    ((2, 3), 0.7),  # wieder aufgehen, ploetzlich wieder sustaining instruments
+    ((2, 2, 3), 0.83, (0.35, 0.25, 0.2, 0.2)),  # 5  nur klaenge mit tonhoehen, dicht, hohe sinustoene
+    ((4,), 0.7),  # noise instrument + klarinette solo + pop - song - kaufhaus fieldrecording
+    ((4,), 0.6, (0.89, 0.13)),  # augmentierter cantus firmus teil, lange mono/homo-phone melodie, einstieg in dichte inseln mit viel tape
+    ((3, 2, 5), 0.9),  # dichte inseln mit viel tape, bis dann in gerauesche (instr + noise) uebergeht, und dann lange
+    ((3,), 0.95),  # kurze stelle, weiter mit geraueschen, ist nicht sehr lange, weil danach recht lange cantus firmus kommt
+    ((5,), 0.95),  # 10  # was passiert nach langem cantus firmus? -> es gibt extrem viel stille und dazwischen homophone akkorde
+    ((5,), 0.95),
     ((3, 2, 5), 0.5),
     ((4,), 0.8),
 )
